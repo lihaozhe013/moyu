@@ -1,6 +1,6 @@
 # Development Guide
 
-This is the contributor contract for the implementation. Phase 0 has bootstrapped the package manifest, strict TypeScript configuration, Electron/Vite entry points, React shell placeholder, linting, formatting, and test commands. The secure runtime and feature phases remain in progress.
+This is the contributor contract for the implementation. The repository now includes the strict TypeScript configuration, hardened Electron/Vite runtime, isolated React shell/content architecture, deterministic fixtures, GPU diagnostics, linting, formatting, tests, and reproducible packaging workflows. Product-specific signing and deployment inputs remain release work.
 
 ## Before bootstrap
 

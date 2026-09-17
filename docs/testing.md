@@ -1,8 +1,8 @@
 # Testing Strategy
 
-Testing must prove both application behavior and containment. A test suite that only verifies that the window opens is insufficient for a privileged desktop shell around remote content.
+Testing must prove both application behavior and containment. A test suite that only verifies that the window opens is insufficient for a privileged desktop shell around remote content. The repository now includes deterministic loopback fixtures, Playwright Electron scenarios, GPU capability checks, and CI quality gates; platform-specific signing and clean-machine evidence remain release inputs.
 
-The test commands described here are available from the Phase 0 bootstrap. Assertions for later runtime features are added as their implementation phases land.
+The test commands described here are available from the bootstrap and exercise the implemented runtime through the GPU/diagnostics phase. Packaging workflows are intentionally unsigned until protected release credentials are supplied.
 
 ## Test layers
 

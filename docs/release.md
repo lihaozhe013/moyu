@@ -1,6 +1,6 @@
 # Build and Release
 
-This document defines the intended continuous-integration, packaging, and release contract. It does not imply that a build pipeline already exists.
+This document defines the continuous-integration, packaging, and release contract. The repository now includes an unsigned artifact workflow for platform smoke checks; signing and notarization remain protected release inputs.
 
 ## Supported release targets
 
@@ -87,6 +87,8 @@ Packaging metadata must define:
 - macOS DMG or other approved artifact choices;
 - architecture targets; and
 - signing/notarization hooks driven by CI secrets.
+
+The checked-in [`../electron-builder.yml`](../electron-builder.yml) defines the provisional application identifier, product metadata, asar inclusion set, Windows NSIS/portable targets, and macOS DMG/zip targets for arm64 and x64. The `build/` directory contains a neutral geometric placeholder icon set that must be replaced by approved product branding before signing. The manually triggered [`../.github/workflows/package.yml`](../.github/workflows/package.yml) intentionally produces unsigned artifacts with certificate auto-discovery disabled so they cannot be mistaken for signed releases.
 
 Generic Electron branding, default icons, development URLs, test fixtures, and unnecessary source files must not leak into production artifacts.
 

@@ -1,0 +1,31 @@
+appId: com.moyu.professionalcanvas
+productName: Professional Canvas
+copyright: Copyright © 2026 Professional Canvas contributors
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+asar: true
+icon: build/icon
+mac:
+  category: public.app-category.graphics-design
+  hardenedRuntime: true
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  artifactName: Professional-Canvas-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+publish: null

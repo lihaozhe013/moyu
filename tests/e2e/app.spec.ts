@@ -290,6 +290,8 @@ test('renders the local error overlay and recovers with Retry', async () => {
 test('keeps the shell alive after a content renderer crash and reloads it', async () => {
   await launchApplication();
   const shell = await application!.firstWindow();
+  await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
+  await expect(shell.locator('.loading-overlay')).toBeHidden({ timeout: 15_000 });
 
   await application!.evaluate(({ BrowserWindow }) => {
     const window = BrowserWindow.getAllWindows()[0];

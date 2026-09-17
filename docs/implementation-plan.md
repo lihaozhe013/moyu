@@ -179,7 +179,7 @@ The completed fixture and resilience layer provides loopback routes for readines
 
 The completed GPU/performance layer keeps Chromium hardware acceleration under Electron defaults, exposes non-sensitive version/feature/scale diagnostics only to the local shell, and exercises a deterministic WebGL/WebGPU capability fixture. Resize E2E confirms frame-coalesced, deduplicated geometry remains aligned; no timer-based polling or remote frame proxy was introduced. The next target is Phase 8: packaging and release readiness.
 
-## Phase 8: Packaging and release readiness (next)
+## Phase 8: Packaging and release readiness (complete with release inputs pending)
 
 ### Work
 
@@ -195,6 +195,8 @@ The completed GPU/performance layer keeps Chromium hardware acceleration under E
 - Frozen install, typecheck, lint, unit, build, applicable E2E, and packaging gates pass.
 - Production artifacts contain no development endpoints, test controls, generic Electron branding, or browser leakage.
 - Release records include platform, architecture, scale, signature, and notarization evidence.
+
+The repository now has explicit electron-builder metadata, asar file inclusion rules, Windows and macOS target definitions, a documented icon-input gate, and isolated GitHub Actions quality/package workflows. The structural packaging gate is complete; signed artifacts, final product identifiers/branding, and clean-platform installation evidence remain intentionally blocked on deployment-specific release inputs.
 
 ## Dependency graph
 

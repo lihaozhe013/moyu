@@ -2,7 +2,7 @@
 
 Professional Canvas Desktop App is a planned cross-platform Electron shell for a single, predefined web workspace. It is designed to feel like a focused creative desktop application, not a general-purpose browser.
 
-> **Project status:** Phase 7 complete. The strict TypeScript/toolchain scaffold, pure policy contracts, secure local shell, validated preload/IPC boundary, isolated content surface, desktop interactions, shortcuts, zoom, fullscreen, window-state persistence, deterministic fixtures, Electron E2E coverage, and non-sensitive GPU diagnostics build and test successfully; release packaging remains pending.
+> **Project status:** Phase 8 structurally complete. The strict TypeScript/toolchain scaffold, pure policy contracts, secure local shell, validated preload/IPC boundary, isolated content surface, desktop interactions, shortcuts, zoom, fullscreen, window-state persistence, deterministic fixtures, Electron E2E coverage, non-sensitive GPU diagnostics, packaging metadata, and CI workflows are implemented; product branding inputs, signed artifacts, and final clean-platform release verification remain pending.
 
 The normative implementation requirements live in [`SPEC.md`](./SPEC.md). The documents in [`docs/`](./docs/) explain those requirements as architecture, security, user-experience, delivery, and verification guidance. If a secondary document conflicts with `SPEC.md`, `SPEC.md` takes precedence until the conflict is deliberately resolved.
 
@@ -101,4 +101,4 @@ Version 1 is complete only when:
 - typecheck, lint, unit tests, build, applicable E2E tests, and packaging succeed from a frozen lockfile; and
 - release artifacts are produced with the required platform signing controls or are clearly labeled as non-release development artifacts.
 
-The current repository contains the completed work through Phase 7. Release packaging and platform signing remain pending.
+The current repository contains the completed implementation through Phase 8's reproducible packaging structure. Product branding, signing/notarization credentials, and final Windows/macOS clean-machine verification remain release inputs.

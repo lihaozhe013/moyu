@@ -2,6 +2,7 @@
   "name": "professional-canvas-desktop-app",
   "version": "0.1.0",
   "description": "A focused Electron desktop shell for a trusted creative workspace.",
+  "author": "Professional Canvas contributors",
   "private": true,
   "type": "module",
   "main": "out/main/index.js",
@@ -22,9 +23,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "pnpm build && playwright test",
-    "package": "pnpm build && electron-builder",
-    "package:win": "pnpm build && electron-builder --win",
-    "package:mac": "pnpm build && electron-builder --mac"
+    "package": "pnpm build && electron-builder --config electron-builder.yml",
+    "package:win": "pnpm build && electron-builder --config electron-builder.yml --win",
+    "package:mac": "pnpm build && electron-builder --config electron-builder.yml --mac"
   },
   "dependencies": {
     "react": "19.3.0",
