@@ -100,7 +100,7 @@ The completed shell includes the hidden startup window, single-instance lifecycl
 
 The completed IPC boundary exposes only named window/content/layout operations, validates shell sender frames and payloads in the main process, provides typed content-state events, and fails explicitly when the content surface is not initialized. The next target is Phase 4: isolated content integration.
 
-## Phase 4: Isolated content integration
+## Phase 4: Isolated content integration (complete)
 
 ### Work
 
@@ -117,6 +117,8 @@ The completed IPC boundary exposes only named window/content/layout operations, 
 - Denied navigation, redirect, popup, permission, and download cases remain denied.
 - The shell survives content load failure and renderer exit.
 - Bounds remain aligned during resize, maximize, restore, and fullscreen at tested scales.
+
+The completed content integration creates one sandboxed `WebContentsView` on a named session, installs navigation/redirect, popup, permission, context-menu, and download policies before loading, synchronizes renderer geometry through validated IPC, and publishes custom loading/error/crash states to the shell. The next target is Phase 5: interaction and desktop behavior completion.
 
 ## Phase 5: Interaction and desktop behavior
 
@@ -249,4 +251,4 @@ Before starting Phase 0, confirm:
 - [ ] Required Windows and macOS test access is available or planned.
 - [ ] Signing/notarization responsibilities are known before release work.
 
-The next implementation target is Phase 4: isolated content integration.
+The next implementation target is Phase 5: interaction and desktop behavior completion.

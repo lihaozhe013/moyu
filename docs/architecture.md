@@ -258,7 +258,7 @@ interface AppConfig {
 }
 ```
 
-The final type may add explicit authentication origins, session policy, or logging controls. All environment-derived values are parsed and validated at the boundary. Arbitrary modules do not read `process.env` directly.
+The final type may add explicit authentication origins, session policy, or logging controls. All environment-derived values are parsed and validated at the boundary. The current environment variable contract is documented in [`.env.example`](../.env.example). Arbitrary modules do not read `process.env` directly.
 
 Production configuration must reject missing or invalid URLs and insecure origins unless an intentional, documented exception exists. Test mode uses deterministic local fixture origins. Development relaxations must be individually enabled rather than inferred from an ambiguous flag.
 

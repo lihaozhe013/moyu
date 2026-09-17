@@ -35,10 +35,16 @@ export interface DevelopmentConfig {
   readonly allowArbitraryNavigation: boolean;
 }
 
+export interface SessionConfig {
+  readonly persist: boolean;
+  readonly partition: string;
+}
+
 export interface AppConfig {
   readonly mode: AppMode;
   readonly content: ContentConfig;
   readonly development: DevelopmentConfig;
+  readonly session: SessionConfig;
 }
 
 export interface PersistedWindowState {

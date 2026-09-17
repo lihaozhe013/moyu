@@ -125,7 +125,7 @@ Runtime configuration is resolved once and validated before creating remote cont
 | Logging                | Verbose, sanitized                                      | Deterministic                          | Minimal, sanitized              |
 | Session persistence    | According to integration need                           | Isolated/deterministic                 | Explicit product decision       |
 
-Exact environment-variable names should be selected during bootstrap and documented in a committed `.env.example` containing no secrets. Boolean values must be parsed explicitly; non-empty strings must not automatically mean `true`.
+The bootstrap defines the environment variables shown in [`.env.example`](../.env.example). It contains no secrets. Boolean values are parsed explicitly; non-empty strings must not automatically mean `true`.
 
 No feature module reads `process.env` directly. Tests may construct validated configuration objects without mutating ambient global state.
 

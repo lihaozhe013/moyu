@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ConfigurationError,
   createAppConfig,
+  resolveAppConfigFromEnvironment,
   validateAppConfigInput,
 } from '../../src/main/security/config';
 
@@ -24,6 +25,7 @@ describe('application configuration', () => {
       enableDevTools: true,
       allowArbitraryNavigation: false,
     });
+    expect(config.session).toEqual({ persist: false, partition: 'workspace' });
   });
 
   it('accepts loopback HTTP only outside production', () => {
@@ -76,5 +78,28 @@ describe('application configuration', () => {
     expect(() => createAppConfig({ ...baseInput, allowedOrigins: [] })).toThrow(
       'allowedOrigins must contain at least one origin',
     );
+  });
+
+  it('resolves environment values once with explicit boolean parsing', () => {
+    const config = resolveAppConfigFromEnvironment({
+      NODE_ENV: 'test',
+      APP_CONTENT_URL: 'http://127.0.0.1:4311/workspace',
+      APP_ALLOWED_ORIGINS: 'http://127.0.0.1:4311',
+      APP_PERSIST_SESSION: 'true',
+      APP_SESSION_NAME: 'fixture-session',
+      APP_ENABLE_DEVTOOLS: 'false',
+    });
+
+    expect(config).toMatchObject({
+      mode: 'test',
+      development: { enableDevTools: false, allowArbitraryNavigation: false },
+      session: { persist: true, partition: 'persist:fixture-session' },
+    });
+    expect(() => resolveAppConfigFromEnvironment({ NODE_ENV: 'production' })).toThrow(
+      'APP_CONTENT_URL is required',
+    );
+    expect(() =>
+      resolveAppConfigFromEnvironment({ NODE_ENV: 'test', APP_ENABLE_DEVTOOLS: 'maybe' }),
+    ).toThrow('APP_ENABLE_DEVTOOLS must be true or false');
   });
 });

@@ -5,6 +5,7 @@ import type {
   DevelopmentConfig,
   ValidationResult,
 } from '../../shared/types';
+import { resolveRuntimeMode } from '../app/environment';
 import { normalizeOrigin } from '../navigation/allowed-origins';
 
 export interface AppConfigInput {
@@ -14,6 +15,8 @@ export interface AppConfigInput {
   readonly authenticationOrigins?: readonly string[];
   readonly enableDevTools?: boolean;
   readonly allowArbitraryNavigation?: boolean;
+  readonly persistSession?: boolean;
+  readonly sessionName?: string;
 }
 
 export class ConfigurationError extends Error {
@@ -75,6 +78,8 @@ export function validateAppConfigInput(input: unknown): ValidationResult<AppConf
     'authenticationOrigins',
     'enableDevTools',
     'allowArbitraryNavigation',
+    'persistSession',
+    'sessionName',
   ]);
   if (Object.keys(candidate).some((key) => !allowedKeys.has(key))) {
     return { success: false, error: 'Configuration contains an unknown field.' };
@@ -107,10 +112,14 @@ export function validateAppConfigInput(input: unknown): ValidationResult<AppConf
   for (const [name, value] of [
     ['enableDevTools', candidate.enableDevTools],
     ['allowArbitraryNavigation', candidate.allowArbitraryNavigation],
+    ['persistSession', candidate.persistSession],
   ] as const) {
     if (value !== undefined && typeof value !== 'boolean') {
       return { success: false, error: `Configuration ${name} must be a boolean.` };
     }
+  }
+  if (candidate.sessionName !== undefined && typeof candidate.sessionName !== 'string') {
+    return { success: false, error: 'Configuration sessionName must be a string.' };
   }
 
   const enableDevTools = candidate.enableDevTools;
@@ -129,6 +138,12 @@ export function validateAppConfigInput(input: unknown): ValidationResult<AppConf
       ...(allowArbitraryNavigation === undefined
         ? {}
         : { allowArbitraryNavigation: allowArbitraryNavigation as boolean }),
+      ...(candidate.persistSession === undefined
+        ? {}
+        : { persistSession: candidate.persistSession as boolean }),
+      ...(candidate.sessionName === undefined
+        ? {}
+        : { sessionName: candidate.sessionName as string }),
     },
   };
 }
@@ -139,7 +154,16 @@ export function createAppConfig(input: AppConfigInput): AppConfig {
     throw new ConfigurationError(validation.error);
   }
 
-  const { mode, initialUrl, allowedOrigins, authenticationOrigins = [] } = validation.value;
+  const {
+    mode,
+    initialUrl,
+    allowedOrigins,
+    authenticationOrigins = [],
+    sessionName = 'workspace',
+  } = validation.value;
+  if (!/^[a-zA-Z0-9._-]+$/.test(sessionName)) {
+    throw new ConfigurationError('Configuration sessionName contains unsupported characters.');
+  }
   const parsedInitialUrl = parseInitialUrl(initialUrl, mode);
   const normalizedAllowedOrigins = parseOrigins(allowedOrigins, 'allowedOrigins');
   const normalizedAuthenticationOrigins =
@@ -178,5 +202,78 @@ export function createAppConfig(input: AppConfigInput): AppConfig {
     authenticationOrigins: normalizedAuthenticationOrigins,
   };
 
-  return { mode, content, development };
+  const persistSession = input.persistSession ?? false;
+  return {
+    mode,
+    content,
+    development,
+    session: {
+      persist: persistSession,
+      partition: persistSession ? `persist:${sessionName}` : sessionName,
+    },
+  };
+}
+
+const DEVELOPMENT_DEFAULT_URL = 'https://example.com/';
+const TEST_DEFAULT_URL = 'http://127.0.0.1:4311/';
+
+function readList(
+  environment: NodeJS.ProcessEnv,
+  key: string,
+  fallback: readonly string[],
+): readonly string[] {
+  const raw = environment[key];
+  if (raw === undefined) {
+    return fallback;
+  }
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+function readBoolean(environment: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
+  const raw = environment[key];
+  if (raw === undefined) {
+    return fallback;
+  }
+  if (raw === 'true' || raw === '1') {
+    return true;
+  }
+  if (raw === 'false' || raw === '0') {
+    return false;
+  }
+  throw new ConfigurationError(`${key} must be true or false.`);
+}
+
+export function resolveAppConfigFromEnvironment(
+  environment: NodeJS.ProcessEnv = process.env,
+): AppConfig {
+  const mode = resolveRuntimeMode(environment);
+  const configuredUrl = environment.APP_CONTENT_URL;
+  if (mode === 'production' && (configuredUrl === undefined || configuredUrl.length === 0)) {
+    throw new ConfigurationError('APP_CONTENT_URL is required in production.');
+  }
+
+  const initialUrl =
+    configuredUrl ?? (mode === 'test' ? TEST_DEFAULT_URL : DEVELOPMENT_DEFAULT_URL);
+  let initialOrigin: string;
+  try {
+    initialOrigin = new URL(initialUrl).origin;
+  } catch {
+    throw new ConfigurationError('APP_CONTENT_URL must be a valid URL.');
+  }
+
+  return createAppConfig({
+    mode,
+    initialUrl,
+    allowedOrigins: readList(environment, 'APP_ALLOWED_ORIGINS', [initialOrigin]),
+    authenticationOrigins: readList(environment, 'APP_AUTHENTICATION_ORIGINS', []),
+    enableDevTools: readBoolean(environment, 'APP_ENABLE_DEVTOOLS', mode !== 'production'),
+    allowArbitraryNavigation: readBoolean(environment, 'APP_ALLOW_ARBITRARY_NAVIGATION', false),
+    persistSession: readBoolean(environment, 'APP_PERSIST_SESSION', false),
+    ...(environment.APP_SESSION_NAME === undefined
+      ? {}
+      : { sessionName: environment.APP_SESSION_NAME }),
+  });
 }

@@ -5,6 +5,9 @@ export function resolveRuntimeMode(environment: NodeJS.ProcessEnv = process.env)
   if (value === 'development' || value === 'test' || value === 'production') {
     return value;
   }
+  if (environment.ELECTRON_RENDERER_URL !== undefined) {
+    return 'development';
+  }
   return 'production';
 }
 
