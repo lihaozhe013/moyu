@@ -1,6 +1,6 @@
 # Development Guide
 
-This is the contributor contract for the future implementation. The repository is currently in a documentation-only state: it has no `package.json`, installed dependencies, application source, or runnable scripts.
+This is the contributor contract for the implementation. Phase 0 has bootstrapped the package manifest, strict TypeScript configuration, Electron/Vite entry points, React shell placeholder, linting, formatting, and test commands. The secure runtime and feature phases remain in progress.
 
 ## Before bootstrap
 
@@ -115,15 +115,15 @@ The main entry point wires lifecycle and subsystem factories. It must not become
 
 Runtime configuration is resolved once and validated before creating remote content. Conceptual inputs include:
 
-| Input | Development | Test | Production |
-| --- | --- | --- | --- |
-| Initial content URL | Explicit configured URL; localhost allowed deliberately | Local fixture URL | Required approved HTTPS URL |
-| Allowed origins | Explicit list | Fixture origins | Required approved HTTPS origins |
-| Authentication origins | Explicit list if needed | Fixture cases | Reviewed provider origins only |
-| DevTools | Allowed | Normally off unless a test requires it | Off by default |
-| Arbitrary navigation | Optional explicit opt-in | Controlled by test case | Off |
-| Logging | Verbose, sanitized | Deterministic | Minimal, sanitized |
-| Session persistence | According to integration need | Isolated/deterministic | Explicit product decision |
+| Input                  | Development                                             | Test                                   | Production                      |
+| ---------------------- | ------------------------------------------------------- | -------------------------------------- | ------------------------------- |
+| Initial content URL    | Explicit configured URL; localhost allowed deliberately | Local fixture URL                      | Required approved HTTPS URL     |
+| Allowed origins        | Explicit list                                           | Fixture origins                        | Required approved HTTPS origins |
+| Authentication origins | Explicit list if needed                                 | Fixture cases                          | Reviewed provider origins only  |
+| DevTools               | Allowed                                                 | Normally off unless a test requires it | Off by default                  |
+| Arbitrary navigation   | Optional explicit opt-in                                | Controlled by test case                | Off                             |
+| Logging                | Verbose, sanitized                                      | Deterministic                          | Minimal, sanitized              |
+| Session persistence    | According to integration need                           | Isolated/deterministic                 | Explicit product decision       |
 
 Exact environment-variable names should be selected during bootstrap and documented in a committed `.env.example` containing no secrets. Boolean values must be parsed explicitly; non-empty strings must not automatically mean `true`.
 
@@ -148,22 +148,22 @@ Development dependencies remain subject to the same maintenance and supply-chain
 
 The implementation should expose stable command names even if underlying tool syntax changes:
 
-| Command | Contract |
-| --- | --- |
-| `pnpm dev` | Start the electron-vite development workflow |
-| `pnpm build` | Produce compiled application output without packaging |
-| `pnpm preview` | Preview built output using the supported electron-vite flow |
-| `pnpm typecheck` | Typecheck main/preload and renderer projects |
-| `pnpm lint` | Run ESLint without modifying files |
-| `pnpm lint:fix` | Apply safe lint fixes |
-| `pnpm test` | Run deterministic unit tests once |
-| `pnpm test:watch` | Run unit tests in watch mode |
-| `pnpm test:e2e` | Run Playwright Electron tests and the local fixture |
-| `pnpm package` | Package for the current platform |
-| `pnpm package:win` | Produce configured Windows artifacts |
-| `pnpm package:mac` | Produce configured macOS artifacts |
+| Command            | Contract                                                    |
+| ------------------ | ----------------------------------------------------------- |
+| `pnpm dev`         | Start the electron-vite development workflow                |
+| `pnpm build`       | Produce compiled application output without packaging       |
+| `pnpm preview`     | Preview built output using the supported electron-vite flow |
+| `pnpm typecheck`   | Typecheck main/preload and renderer projects                |
+| `pnpm lint`        | Run ESLint without modifying files                          |
+| `pnpm lint:fix`    | Apply safe lint fixes                                       |
+| `pnpm test`        | Run deterministic unit tests once                           |
+| `pnpm test:watch`  | Run unit tests in watch mode                                |
+| `pnpm test:e2e`    | Run Playwright Electron tests and the local fixture         |
+| `pnpm package`     | Package for the current platform                            |
+| `pnpm package:win` | Produce configured Windows artifacts                        |
+| `pnpm package:mac` | Produce configured macOS artifacts                          |
 
-These scripts must use commands documented by the installed versions. Obsolete template commands must not be copied without verification.
+These scripts are available from the Phase 0 bootstrap. Commands that depend on later runtime features may remain minimal until their implementation phase is complete. They must use commands documented by the installed versions; obsolete template commands must not be copied without verification.
 
 ## Contributor workflow
 

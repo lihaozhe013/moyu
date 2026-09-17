@@ -19,14 +19,14 @@ The application presents one trusted web workspace inside a purpose-built deskto
 
 The initial layout uses these dimensions as adjustable design tokens:
 
-| Region | Initial size | Owner | Purpose |
-| --- | ---: | --- | --- |
-| Title bar | 32 px high | Local shell | Dragging, branding, window controls |
-| Menu or toolbar | 36 px high | Local shell | Application actions, never browser navigation |
-| Left tool rail | 48 px wide | Local shell | Workspace tools |
-| Content surface | Remaining center area | `WebContentsView` | Trusted web application |
-| Right inspector | 280 px wide | Local shell | Contextual application controls |
-| Status bar | 24 px high | Local shell | State, zoom, and concise status |
+| Region          |          Initial size | Owner             | Purpose                                       |
+| --------------- | --------------------: | ----------------- | --------------------------------------------- |
+| Title bar       |            32 px high | Local shell       | Dragging, branding, window controls           |
+| Menu or toolbar |            36 px high | Local shell       | Application actions, never browser navigation |
+| Left tool rail  |            48 px wide | Local shell       | Workspace tools                               |
+| Content surface | Remaining center area | `WebContentsView` | Trusted web application                       |
+| Right inspector |           280 px wide | Local shell       | Contextual application controls               |
+| Status bar      |            24 px high | Local shell       | State, zoom, and concise status               |
 
 These values must be CSS variables rather than duplicated constants. Panels may become resizable, but any change must be reflected precisely in the native content-view bounds.
 
@@ -49,11 +49,11 @@ At no point may the user see a white Chromium window, `about:blank`, a Vite deve
 
 The three presentation states are distinct:
 
-| State | OS chrome | Application shell | Expected behavior |
-| --- | --- | --- | --- |
-| Windowed | Present or custom-integrated | Visible | Resizable, constrained by the minimum size |
-| Maximized | Platform maximized | Visible | Default large-workspace experience |
-| Fullscreen | Removed using native Electron fullscreen | Visible | Restores the previous non-fullscreen state on exit |
+| State      | OS chrome                                | Application shell | Expected behavior                                  |
+| ---------- | ---------------------------------------- | ----------------- | -------------------------------------------------- |
+| Windowed   | Present or custom-integrated             | Visible           | Resizable, constrained by the minimum size         |
+| Maximized  | Platform maximized                       | Visible           | Default large-workspace experience                 |
+| Fullscreen | Removed using native Electron fullscreen | Visible           | Restores the previous non-fullscreen state on exit |
 
 Maximize and fullscreen must never be represented by the same internal flag. Moving between displays, changing scale factors, or leaving fullscreen must preserve a correctly aligned content surface.
 
@@ -77,29 +77,29 @@ The command palette is hidden until the user presses Ctrl+Shift+L on Windows/Lin
 
 Recognized aliases are intentionally limited and environment-gated:
 
-| Command | Result | Availability |
-| --- | --- | --- |
-| `workspace` | Return to the configured workspace location if policy allows | All modes |
-| `reload` | Reload the content surface | All modes |
-| `about` | Show application information | All modes |
-| `gpu` | Show non-sensitive GPU diagnostics through internal UI | Internal/developer mode |
-| `devtools` | Open approved developer tools | Development mode only |
+| Command     | Result                                                       | Availability            |
+| ----------- | ------------------------------------------------------------ | ----------------------- |
+| `workspace` | Return to the configured workspace location if policy allows | All modes               |
+| `reload`    | Reload the content surface                                   | All modes               |
+| `about`     | Show application information                                 | All modes               |
+| `gpu`       | Show non-sensitive GPU diagnostics through internal UI       | Internal/developer mode |
+| `devtools`  | Open approved developer tools                                | Development mode only   |
 
 `open https://...` is also a development-only capability. Free-form URL entry must not become a production browser feature.
 
 ## Keyboard behavior
 
-| Shortcut | Action | Availability |
-| --- | --- | --- |
-| Ctrl/Cmd+Shift+L | Open command palette | All modes |
-| Ctrl/Cmd+R | Reload content | All modes |
-| Ctrl/Cmd+Shift+R | Hard reload content | All modes |
-| F11 | Toggle fullscreen | Windows/Linux; native macOS behavior also supported |
-| Escape | Close the foremost palette or modal | All modes |
-| Ctrl/Cmd+0 | Reset content zoom to 100% | All modes |
-| Ctrl/Cmd++ | Increase content zoom | All modes |
-| Ctrl/Cmd+- | Decrease content zoom | All modes |
-| Ctrl/Cmd+Shift+I | Open content DevTools | Development mode only |
+| Shortcut         | Action                              | Availability                                        |
+| ---------------- | ----------------------------------- | --------------------------------------------------- |
+| Ctrl/Cmd+Shift+L | Open command palette                | All modes                                           |
+| Ctrl/Cmd+R       | Reload content                      | All modes                                           |
+| Ctrl/Cmd+Shift+R | Hard reload content                 | All modes                                           |
+| F11              | Toggle fullscreen                   | Windows/Linux; native macOS behavior also supported |
+| Escape           | Close the foremost palette or modal | All modes                                           |
+| Ctrl/Cmd+0       | Reset content zoom to 100%          | All modes                                           |
+| Ctrl/Cmd++       | Increase content zoom               | All modes                                           |
+| Ctrl/Cmd+-       | Decrease content zoom               | All modes                                           |
+| Ctrl/Cmd+Shift+I | Open content DevTools               | Development mode only                               |
 
 Shortcuts are application-scoped. They must not be registered globally when their action only applies while the app is active.
 
@@ -111,14 +111,14 @@ Content zoom begins at 100%, stays within 50%–200%, and uses controlled steps:
 
 The shell owns all final error experiences.
 
-| Condition | Required shell response |
-| --- | --- |
-| Remote load fails | Show “Unable to load workspace,” a Retry action, and a sanitized error code |
-| Content renderer exits | Show “Workspace stopped unexpectedly” and a Reload workspace action |
-| Content is unresponsive | Show local status or recovery UI without freezing the shell |
-| Content becomes responsive | Clear transient unresponsive state |
-| Navigation is denied | Keep the current workspace; optionally show a concise policy message |
-| Popup is requested | Deny it unless an explicit policy case exists; never create an uncontrolled browser window |
+| Condition                  | Required shell response                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| Remote load fails          | Show “Unable to load workspace,” a Retry action, and a sanitized error code                |
+| Content renderer exits     | Show “Workspace stopped unexpectedly” and a Reload workspace action                        |
+| Content is unresponsive    | Show local status or recovery UI without freezing the shell                                |
+| Content becomes responsive | Clear transient unresponsive state                                                         |
+| Navigation is denied       | Keep the current workspace; optionally show a concise policy message                       |
+| Popup is requested         | Deny it unless an explicit policy case exists; never create an uncontrolled browser window |
 
 Chromium's default network, crash, or error pages cannot be the final user-facing state.
 

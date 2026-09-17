@@ -4,13 +4,13 @@ This document defines the intended continuous-integration, packaging, and releas
 
 ## Supported release targets
 
-| Platform | Architecture | Version 1 status |
-| --- | --- | --- |
-| Windows 11 | x64 | Required |
-| macOS | arm64 | Required |
-| macOS | x64 | Required |
-| macOS | universal | Structurally supported for a future release |
-| Windows | arm64 | Future scope |
+| Platform   | Architecture | Version 1 status                            |
+| ---------- | ------------ | ------------------------------------------- |
+| Windows 11 | x64          | Required                                    |
+| macOS      | arm64        | Required                                    |
+| macOS      | x64          | Required                                    |
+| macOS      | universal    | Structurally supported for a future release |
+| Windows    | arm64        | Future scope                                |
 
 The exact minimum macOS version is selected during toolchain bootstrap based on the chosen stable Electron release and product requirements. It must be documented in package metadata and release notes before the first distributable release.
 
@@ -63,13 +63,13 @@ Applicable jobs then run `pnpm test:e2e`, `pnpm package:win`, or `pnpm package:m
 
 The initial target matrix should include:
 
-| Job | Windows x64 | macOS arm64 | macOS x64 |
-| --- | --- | --- | --- |
-| Install/typecheck/lint/unit/build | Required on at least one primary runner; cross-platform-sensitive build checks on all target families | Required | Required where runner support permits |
-| Electron E2E smoke | Required | Required | Required or explicitly covered by a compatible macOS runner |
-| Package | Required | Required | Required |
-| Sign | Required for release | Required for release | Required for release |
-| Notarize | Not applicable | Required for release | Required for release |
+| Job                               | Windows x64                                                                                           | macOS arm64          | macOS x64                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------- |
+| Install/typecheck/lint/unit/build | Required on at least one primary runner; cross-platform-sensitive build checks on all target families | Required             | Required where runner support permits                       |
+| Electron E2E smoke                | Required                                                                                              | Required             | Required or explicitly covered by a compatible macOS runner |
+| Package                           | Required                                                                                              | Required             | Required                                                    |
+| Sign                              | Required for release                                                                                  | Required for release | Required for release                                        |
+| Notarize                          | Not applicable                                                                                        | Required for release | Required for release                                        |
 
 The exact workflow can reduce duplicate pure-test work, but it cannot omit platform-sensitive behavior or artifact verification.
 

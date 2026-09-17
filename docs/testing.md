@@ -2,17 +2,17 @@
 
 Testing must prove both application behavior and containment. A test suite that only verifies that the window opens is insufficient for a privileged desktop shell around remote content.
 
-The test commands described here are targets for the implementation; none are currently available in this documentation-only repository.
+The test commands described here are available from the Phase 0 bootstrap. Assertions for later runtime features are added as their implementation phases land.
 
 ## Test layers
 
-| Layer | Primary purpose | Expected tools |
-| --- | --- | --- |
-| Pure unit tests | Policy, validation, conversion, and state transitions | Vitest |
-| Main-process integration tests | Handler wiring and Electron object coordination where practical | Vitest with focused adapters/fakes |
-| Shell component tests | Accessible states and local interaction logic where valuable | Vitest and a lightweight DOM environment |
-| Electron E2E tests | Cross-process behavior, native window state, and visible containment | Playwright Electron support |
-| Manual platform checks | OS integration, DPI, signing, native menus, and GPU behavior | Windows 11 and macOS hardware/VMs as appropriate |
+| Layer                          | Primary purpose                                                      | Expected tools                                   |
+| ------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------ |
+| Pure unit tests                | Policy, validation, conversion, and state transitions                | Vitest                                           |
+| Main-process integration tests | Handler wiring and Electron object coordination where practical      | Vitest with focused adapters/fakes               |
+| Shell component tests          | Accessible states and local interaction logic where valuable         | Vitest and a lightweight DOM environment         |
+| Electron E2E tests             | Cross-process behavior, native window state, and visible containment | Playwright Electron support                      |
+| Manual platform checks         | OS integration, DPI, signing, native menus, and GPU behavior         | Windows 11 and macOS hardware/VMs as appropriate |
 
 Pure policy must be kept outside Electron event callbacks so it can be tested deterministically.
 
@@ -103,14 +103,14 @@ Cover loading, success, failure, crash, retry, and stale-event handling. A failu
 
 Automated tests must not rely exclusively on the production website. A local fixture server provides predictable behavior and must bind to a loopback interface with an ephemeral or isolated port.
 
-| Route | Required behavior | Main tests enabled |
-| --- | --- | --- |
-| `/` | Stable page with a readiness marker and basic dimensions/status data | Launch and load readiness |
-| `/redirect-allowed` | Redirects to another path on the configured fixture origin | Allowed redirect |
-| `/redirect-denied` | Redirects to a second local origin or port not on the allowlist | Redirect denial |
-| `/popup` | Attempts `window.open` from a user-triggerable control and reports whether it obtained a handle | Popup denial |
-| `/webgl` | Creates a simple WebGL context and renders a changing frame or capability result | GPU path smoke test |
-| `/error` | Produces a deterministic failed load, aborted response, or controlled server failure | Custom error and retry UI |
+| Route               | Required behavior                                                                               | Main tests enabled        |
+| ------------------- | ----------------------------------------------------------------------------------------------- | ------------------------- |
+| `/`                 | Stable page with a readiness marker and basic dimensions/status data                            | Launch and load readiness |
+| `/redirect-allowed` | Redirects to another path on the configured fixture origin                                      | Allowed redirect          |
+| `/redirect-denied`  | Redirects to a second local origin or port not on the allowlist                                 | Redirect denial           |
+| `/popup`            | Attempts `window.open` from a user-triggerable control and reports whether it obtained a handle | Popup denial              |
+| `/webgl`            | Creates a simple WebGL context and renders a changing frame or capability result                | GPU path smoke test       |
+| `/error`            | Produces a deterministic failed load, aborted response, or controlled server failure            | Custom error and retry UI |
 
 Where practical, add a WebGPU feature check to `/webgl`. Lack of WebGPU is a valid reported outcome; it is not automatically a test failure. The fixture must not require public network access.
 
@@ -177,11 +177,11 @@ Visual screenshots can support these assertions but should not be the sole sourc
 
 Release-grade checks include:
 
-| Platform | Architecture | Scale factors | Required focus |
-| --- | --- | --- | --- |
-| Windows 11 | x64 | 100%, 125%, 150%, 200% | Frameless resize, controls, maximize/restore, F11, mixed-DPI movement |
-| macOS | arm64 | Retina/default plus available scaled modes | Traffic lights, hidden titlebar spacing, native fullscreen, Cmd shortcuts, trackpad |
-| macOS | x64 | Retina/default where hardware/runner permits | Packaging, launch, native menu, fullscreen |
+| Platform   | Architecture | Scale factors                                | Required focus                                                                      |
+| ---------- | ------------ | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Windows 11 | x64          | 100%, 125%, 150%, 200%                       | Frameless resize, controls, maximize/restore, F11, mixed-DPI movement               |
+| macOS      | arm64        | Retina/default plus available scaled modes   | Traffic lights, hidden titlebar spacing, native fullscreen, Cmd shortcuts, trackpad |
+| macOS      | x64          | Retina/default where hardware/runner permits | Packaging, launch, native menu, fullscreen                                          |
 
 At least one mixed-scale multi-monitor Windows check is required before release. Moving the running window between displays must not leave the content view offset, clipped, or incorrectly sized.
 

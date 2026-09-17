@@ -1,6 +1,6 @@
 # Implementation Plan
 
-This plan sequences the work described by [`../SPEC.md`](../SPEC.md). It is documentation only and does not authorize implementation. Each phase begins only after its inputs are available and its predecessor gates pass.
+This plan sequences the work described by [`../SPEC.md`](../SPEC.md). Phase 0 is complete; subsequent phases are implemented in order as their inputs become available and predecessor gates pass.
 
 ## Guiding constraints
 
@@ -11,7 +11,7 @@ This plan sequences the work described by [`../SPEC.md`](../SPEC.md). It is docu
 - Cross-platform behavior is validated continuously rather than postponed until final packaging.
 - Dependency versions are resolved once at bootstrap and then pinned exactly.
 
-## Phase 0: Product inputs and toolchain
+## Phase 0: Product inputs and toolchain (complete)
 
 ### Inputs to resolve
 
@@ -38,6 +38,8 @@ This plan sequences the work described by [`../SPEC.md`](../SPEC.md). It is docu
 - Clean frozen install, typecheck, test placeholder, and production build succeed.
 - Development and production shell entry paths are distinct.
 - No remote workspace is loaded yet.
+
+The completed bootstrap uses the exact versions recorded in `package.json` and `pnpm-lock.yaml`. Product-specific origins, branding, and signing inputs remain unresolved and are intentionally not embedded in the scaffold.
 
 ## Phase 1: Pure contracts and policy
 
@@ -205,17 +207,17 @@ Product inputs + compatible toolchain
 
 ## Risk register
 
-| Risk | Impact | Mitigation and proof |
-| --- | --- | --- |
-| Vite 8, electron-vite prerelease, TypeScript 7, and Electron incompatibility | Bootstrap or packaging failure | Resolve versions together, prove clean build, pin exact versions |
-| `WebContentsView` bounds drift on fractional DPI | Gaps, overlap, or unusable content | Pure conversion tests plus 125%/150%/Retina and mixed-monitor E2E |
-| Frameless behavior differs across platforms | Broken resizing or non-native chrome | Platform-specific window configuration and manual release matrix |
-| Authentication requires unexpected origins or popups | Login failure or pressure to weaken policy | Discover auth flow early; model exact origins and popup cases; retain default denial |
-| Remote page assumes browser permissions/downloads | Feature loss or unsafe broad grants | Inventory required features; add only origin-scoped reviewed exceptions |
-| Remote content crash or hang affects the shell | Lost recovery path | Separate renderers, lifecycle events, local overlays, recovery E2E |
-| Production accidentally inherits development controls | Security and browser leakage | Independent validated flags and packaged-output tests |
-| macOS signing/notarization unavailable late | Release delay | Establish credential ownership and dry-run signing before final phase |
-| GPU behavior differs by device/driver | Rendering regressions | Capability detection, representative smoke matrix, no speculative flags |
+| Risk                                                                         | Impact                                     | Mitigation and proof                                                                 |
+| ---------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Vite 8, electron-vite prerelease, TypeScript 7, and Electron incompatibility | Bootstrap or packaging failure             | Resolve versions together, prove clean build, pin exact versions                     |
+| `WebContentsView` bounds drift on fractional DPI                             | Gaps, overlap, or unusable content         | Pure conversion tests plus 125%/150%/Retina and mixed-monitor E2E                    |
+| Frameless behavior differs across platforms                                  | Broken resizing or non-native chrome       | Platform-specific window configuration and manual release matrix                     |
+| Authentication requires unexpected origins or popups                         | Login failure or pressure to weaken policy | Discover auth flow early; model exact origins and popup cases; retain default denial |
+| Remote page assumes browser permissions/downloads                            | Feature loss or unsafe broad grants        | Inventory required features; add only origin-scoped reviewed exceptions              |
+| Remote content crash or hang affects the shell                               | Lost recovery path                         | Separate renderers, lifecycle events, local overlays, recovery E2E                   |
+| Production accidentally inherits development controls                        | Security and browser leakage               | Independent validated flags and packaged-output tests                                |
+| macOS signing/notarization unavailable late                                  | Release delay                              | Establish credential ownership and dry-run signing before final phase                |
+| GPU behavior differs by device/driver                                        | Rendering regressions                      | Capability detection, representative smoke matrix, no speculative flags              |
 
 ## Deferred scope
 
@@ -241,4 +243,4 @@ Before starting Phase 0, confirm:
 - [ ] Required Windows and macOS test access is available or planned.
 - [ ] Signing/notarization responsibilities are known before release work.
 
-Completing this document does not begin Phase 0; implementation must be requested separately.
+The next implementation target is Phase 1: pure contracts and policy.

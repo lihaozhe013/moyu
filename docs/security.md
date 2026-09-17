@@ -16,15 +16,15 @@ The application must:
 
 ## Protected assets
 
-| Asset | Security concern |
-| --- | --- |
-| Local filesystem and OS account | Unauthorized read, write, execution, or disclosure |
-| Electron main process | Code execution or policy bypass through malformed IPC or navigation |
-| Authentication state | Cookie, token, or session leakage across origins or logs |
-| Trusted workspace data | Exfiltration through unexpected navigation, popups, permissions, or downloads |
-| Application configuration | Origin allowlist or development controls being broadened at runtime |
-| User privacy | Logging page content, request bodies, credentials, or sensitive diagnostics |
-| Release artifacts | Tampering, unsigned distribution, or dependency drift |
+| Asset                           | Security concern                                                              |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| Local filesystem and OS account | Unauthorized read, write, execution, or disclosure                            |
+| Electron main process           | Code execution or policy bypass through malformed IPC or navigation           |
+| Authentication state            | Cookie, token, or session leakage across origins or logs                      |
+| Trusted workspace data          | Exfiltration through unexpected navigation, popups, permissions, or downloads |
+| Application configuration       | Origin allowlist or development controls being broadened at runtime           |
+| User privacy                    | Logging page content, request bodies, credentials, or sensitive diagnostics   |
+| Release artifacts               | Tampering, unsigned distribution, or dependency drift                         |
 
 ## Trust boundaries
 
@@ -47,21 +47,21 @@ An allowlisted origin is approved for navigation, not promoted to main-process t
 
 ## Threats and required controls
 
-| Threat | Required controls |
-| --- | --- |
-| Remote code invokes desktop APIs | No remote preload; `nodeIntegration: false`; `contextIsolation: true`; `sandbox: true` |
-| Shell compromise reaches arbitrary native APIs | Minimal preload API; no generic IPC; sender validation; runtime payload validation |
-| Open redirect escapes the trusted site | Evaluate every main-frame navigation and redirect against centralized policy |
-| Popup creates a browser or phishing surface | `setWindowOpenHandler` defaults to deny; no implicit popup inheritance |
-| Dangerous URL scheme executes code or accesses files | Reject `javascript:`, remote `file:`, and all unrecognized protocols |
-| Permission prompt grants excessive capability | Session permission request/check handlers default to deny and verify origin plus permission |
-| Drive-by download writes content locally | Cancel `will-download` until an application-controlled flow is approved |
-| Production debugging exposes internals | DevTools, Inspect Element, arbitrary URLs, and verbose logs disabled by default |
-| Session data leaks between unrelated contexts | Use the content view's explicit session; introduce a named partition only when required |
-| Malformed geometry or zoom payload abuses native APIs | Validate type, range, finiteness, sender, and current object lifecycle |
-| Logs disclose credentials or private content | Structured categories, sanitization, no cookies/tokens/request bodies/page data |
-| Content crash takes down the entire UI | Separate shell renderer and content view; local recovery UI |
-| Dependency or build drift changes the attack surface | Resolve compatible versions once, pin exact versions, commit frozen lockfile, review upgrades |
+| Threat                                                | Required controls                                                                             |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Remote code invokes desktop APIs                      | No remote preload; `nodeIntegration: false`; `contextIsolation: true`; `sandbox: true`        |
+| Shell compromise reaches arbitrary native APIs        | Minimal preload API; no generic IPC; sender validation; runtime payload validation            |
+| Open redirect escapes the trusted site                | Evaluate every main-frame navigation and redirect against centralized policy                  |
+| Popup creates a browser or phishing surface           | `setWindowOpenHandler` defaults to deny; no implicit popup inheritance                        |
+| Dangerous URL scheme executes code or accesses files  | Reject `javascript:`, remote `file:`, and all unrecognized protocols                          |
+| Permission prompt grants excessive capability         | Session permission request/check handlers default to deny and verify origin plus permission   |
+| Drive-by download writes content locally              | Cancel `will-download` until an application-controlled flow is approved                       |
+| Production debugging exposes internals                | DevTools, Inspect Element, arbitrary URLs, and verbose logs disabled by default               |
+| Session data leaks between unrelated contexts         | Use the content view's explicit session; introduce a named partition only when required       |
+| Malformed geometry or zoom payload abuses native APIs | Validate type, range, finiteness, sender, and current object lifecycle                        |
+| Logs disclose credentials or private content          | Structured categories, sanitization, no cookies/tokens/request bodies/page data               |
+| Content crash takes down the entire UI                | Separate shell renderer and content view; local recovery UI                                   |
+| Dependency or build drift changes the attack surface  | Resolve compatible versions once, pin exact versions, commit frozen lockfile, review upgrades |
 
 ## Web preferences
 
@@ -144,14 +144,14 @@ Both permission request and permission check behavior must be controlled when su
 
 Initial production posture:
 
-| Permission | Default |
-| --- | --- |
-| Clipboard read/write | Deny until an explicit workflow is approved |
-| Notifications | Deny until an explicit workflow is approved |
-| Media, camera, microphone | Deny |
-| Fullscreen requested by content | Deny unless product behavior requires it |
-| Geolocation | Deny |
-| MIDI, HID, serial, USB, Bluetooth | Deny |
+| Permission                        | Default                                     |
+| --------------------------------- | ------------------------------------------- |
+| Clipboard read/write              | Deny until an explicit workflow is approved |
+| Notifications                     | Deny until an explicit workflow is approved |
+| Media, camera, microphone         | Deny                                        |
+| Fullscreen requested by content   | Deny unless product behavior requires it    |
+| Geolocation                       | Deny                                        |
+| MIDI, HID, serial, USB, Bluetooth | Deny                                        |
 
 Permission grants, if introduced, must be origin-scoped, minimal, documented, and covered by allow and deny tests. There is never a blanket `callback(true)` path.
 
