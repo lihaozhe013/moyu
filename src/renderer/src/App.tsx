@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ContentStatus } from '../../shared/types';
+import type { ContentStatus, GpuDiagnostics } from '../../shared/types';
 import { CommandPalette } from './components/CommandPalette/CommandPalette';
 import { ErrorOverlay } from './components/ErrorOverlay/ErrorOverlay';
 import { Inspector } from './components/Inspector/Inspector';
@@ -13,6 +13,9 @@ export default function App(): React.JSX.Element {
   const [activeTool, setActiveTool] = useState('select');
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [gpuOpen, setGpuOpen] = useState(false);
+  const [gpuDiagnostics, setGpuDiagnostics] = useState<GpuDiagnostics | null>(null);
+  const [gpuError, setGpuError] = useState<string | null>(null);
   const [zoomFactor, setZoomFactor] = useState(1);
   const [contentStatus, setContentStatus] = useState<ContentStatus>({ type: 'loading' });
   const contentHostRef = useRef<HTMLElement | null>(null);
@@ -169,7 +172,23 @@ export default function App(): React.JSX.Element {
     const command = query.trim().toLowerCase();
     setPaletteOpen(false);
     if (command === 'about') {
+      setGpuOpen(false);
       setAboutOpen(true);
+      return;
+    }
+    if (command === 'gpu') {
+      setAboutOpen(false);
+      setGpuOpen(true);
+      setGpuDiagnostics(null);
+      setGpuError(null);
+      const getDiagnostics = window.desktopAPI?.diagnostics.getGpuDiagnostics;
+      if (getDiagnostics !== undefined) {
+        void getDiagnostics()
+          .then((diagnostics) => setGpuDiagnostics(diagnostics))
+          .catch(() => setGpuError('GPU diagnostics are unavailable.'));
+      } else {
+        setGpuError('GPU diagnostics are unavailable.');
+      }
       return;
     }
     if (command === 'workspace' || command === 'reload') {
@@ -224,7 +243,7 @@ export default function App(): React.JSX.Element {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         onSubmit={handleCommand}
-        commands={['workspace', 'reload', 'about']}
+        commands={['workspace', 'reload', 'gpu', 'about']}
       />
       {aboutOpen ? (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setAboutOpen(false)}>
@@ -238,6 +257,52 @@ export default function App(): React.JSX.Element {
             <h2 id="about-title">Professional Canvas</h2>
             <p>Focused desktop workspace shell.</p>
             <button type="button" onClick={() => setAboutOpen(false)}>
+              Close
+            </button>
+          </section>
+        </div>
+      ) : null}
+      {gpuOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setGpuOpen(false)}>
+          <section
+            className="about-dialog gpu-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gpu-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <h2 id="gpu-title">GPU diagnostics</h2>
+            {gpuDiagnostics === null && gpuError === null ? (
+              <p>Reading capability status…</p>
+            ) : null}
+            {gpuError === null && gpuDiagnostics !== null ? (
+              <dl className="gpu-dialog__details">
+                <div>
+                  <dt>Electron</dt>
+                  <dd>{gpuDiagnostics.electronVersion}</dd>
+                </div>
+                <div>
+                  <dt>Chromium</dt>
+                  <dd>{gpuDiagnostics.chromiumVersion}</dd>
+                </div>
+                <div>
+                  <dt>Platform</dt>
+                  <dd>
+                    {gpuDiagnostics.platform} / {gpuDiagnostics.architecture}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Scale</dt>
+                  <dd>{gpuDiagnostics.scaleFactors.join(', ') || 'unknown'}</dd>
+                </div>
+                <div>
+                  <dt>WebGL</dt>
+                  <dd>{gpuDiagnostics.featureStatus.webgl ?? 'unknown'}</dd>
+                </div>
+              </dl>
+            ) : null}
+            {gpuError !== null ? <p role="alert">{gpuError}</p> : null}
+            <button type="button" onClick={() => setGpuOpen(false)}>
               Close
             </button>
           </section>

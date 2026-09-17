@@ -12,6 +12,8 @@ import { installApplicationShortcuts } from './shortcuts/shortcuts';
 import { createWindowPresentationController } from './window/fullscreen';
 import { restoreWindowState } from './window/window-state';
 import { createWindowStateStore, type WindowStateStore } from './window/window-state-store';
+import { collectGpuDiagnostics } from './gpu/diagnostics';
+import { installShellContentSecurityPolicy } from './security/csp';
 
 let mainWindow: BrowserWindow | null = null;
 let contentView: ContentViewController | null = null;
@@ -89,6 +91,7 @@ async function createApplicationWindow(): Promise<void> {
       await contentView.hardReload();
     },
     setContentBounds: (bounds) => contentView?.setBounds(bounds),
+    getGpuDiagnostics: collectGpuDiagnostics,
   });
   removeShortcuts = installApplicationShortcuts(
     mainWindow.webContents,
@@ -147,6 +150,12 @@ async function createApplicationWindow(): Promise<void> {
   });
 
   const rendererDevServerUrl = resolveRendererDevServerUrl();
+  const removeShellCsp = installShellContentSecurityPolicy(
+    mainWindow.webContents.session,
+    config.mode,
+    rendererDevServerUrl,
+  );
+  mainWindow.once('closed', removeShellCsp);
   await loadLocalShell(
     mainWindow,
     rendererDevServerUrl === undefined ? {} : { rendererDevServerUrl },

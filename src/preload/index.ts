@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS, type DesktopAPI } from '../shared/ipc';
-import type { ContentStatus } from '../shared/types';
+import type { ContentStatus, GpuDiagnostics } from '../shared/types';
 
 function isContentStatus(value: unknown): value is ContentStatus {
   if (typeof value !== 'object' || value === null || !('type' in value)) {
@@ -23,6 +23,28 @@ function isContentStatus(value: unknown): value is ContentStatus {
 
 function isFiniteZoomFactor(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0.5 && value <= 2;
+}
+
+function isGpuDiagnostics(value: unknown): value is GpuDiagnostics {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<GpuDiagnostics>;
+  return (
+    typeof candidate.appVersion === 'string' &&
+    typeof candidate.electronVersion === 'string' &&
+    typeof candidate.chromiumVersion === 'string' &&
+    typeof candidate.nodeVersion === 'string' &&
+    typeof candidate.platform === 'string' &&
+    typeof candidate.architecture === 'string' &&
+    Array.isArray(candidate.scaleFactors) &&
+    candidate.scaleFactors.every(
+      (factor) => typeof factor === 'number' && Number.isFinite(factor) && factor > 0,
+    ) &&
+    typeof candidate.featureStatus === 'object' &&
+    candidate.featureStatus !== null &&
+    Object.values(candidate.featureStatus).every((status) => typeof status === 'string')
+  );
 }
 
 const desktopApi: DesktopAPI = {
@@ -61,6 +83,15 @@ const desktopApi: DesktopAPI = {
   },
   layout: {
     setContentBounds: (bounds) => ipcRenderer.invoke(IPC_CHANNELS.layoutSetContentBounds, bounds),
+  },
+  diagnostics: {
+    getGpuDiagnostics: async () => {
+      const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.diagnosticsGetGpu);
+      if (!isGpuDiagnostics(result)) {
+        throw new Error('GPU diagnostics response is invalid.');
+      }
+      return result;
+    },
   },
   commands: {
     onPaletteOpen: (listener) => {

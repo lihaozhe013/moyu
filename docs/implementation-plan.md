@@ -160,7 +160,7 @@ The completed interaction layer adds a controlled command palette, application-s
 
 The completed fixture and resilience layer provides loopback routes for readiness, redirects, popups, permissions, WebGL, downloads, and deterministic recovery; Playwright Electron scenarios cover launch, containment, geometry, presentation, reload, zoom, error recovery, popup/permission denial, and content renderer crash recovery. The next target is Phase 7: GPU capability and performance validation.
 
-## Phase 7: GPU and performance validation (next)
+## Phase 7: GPU and performance validation (complete)
 
 ### Work
 
@@ -177,7 +177,9 @@ The completed fixture and resilience layer provides loopback routes for readines
 - The shell has no continuous idle render/polling loop or redundant bounds storm.
 - No undocumented GPU switch or blanket throttling override is present.
 
-## Phase 8: Packaging and release readiness
+The completed GPU/performance layer keeps Chromium hardware acceleration under Electron defaults, exposes non-sensitive version/feature/scale diagnostics only to the local shell, and exercises a deterministic WebGL/WebGPU capability fixture. Resize E2E confirms frame-coalesced, deduplicated geometry remains aligned; no timer-based polling or remote frame proxy was introduced. The next target is Phase 8: packaging and release readiness.
+
+## Phase 8: Packaging and release readiness (next)
 
 ### Work
 

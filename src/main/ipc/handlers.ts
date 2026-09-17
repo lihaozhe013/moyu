@@ -1,6 +1,11 @@
 import { BrowserWindow, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import { IPC_CHANNELS } from './channels';
-import type { ContentBounds, ContentStatus, WindowPresentationState } from '../../shared/types';
+import type {
+  ContentBounds,
+  ContentStatus,
+  GpuDiagnostics,
+  WindowPresentationState,
+} from '../../shared/types';
 import {
   validateSetContentBoundsPayload,
   validateSetZoomFactorPayload,
@@ -18,6 +23,7 @@ export interface IpcHandlerDependencies {
   readonly reloadContent?: () => Promise<void>;
   readonly hardReloadContent?: () => Promise<void>;
   readonly setContentBounds?: (bounds: ContentBounds) => void;
+  readonly getGpuDiagnostics?: () => GpuDiagnostics;
 }
 
 export function isExpectedShellSender(
@@ -84,6 +90,7 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
     IPC_CHANNELS.contentGetZoomFactor,
     IPC_CHANNELS.contentGetState,
     IPC_CHANNELS.layoutSetContentBounds,
+    IPC_CHANNELS.diagnosticsGetGpu,
   ] as const;
 
   ipcMain.handle(IPC_CHANNELS.windowMinimize, (event) => {
@@ -177,6 +184,13 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
       throw new Error('The content surface is not initialized.');
     }
     dependencies.setContentBounds(validation.value);
+  });
+  ipcMain.handle(IPC_CHANNELS.diagnosticsGetGpu, (event) => {
+    getOwnedWindow(event, dependencies);
+    if (dependencies.getGpuDiagnostics === undefined) {
+      throw new Error('GPU diagnostics are not available.');
+    }
+    return dependencies.getGpuDiagnostics();
   });
 
   return () => {

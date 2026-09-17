@@ -1,6 +1,7 @@
 import type {
   ContentBounds,
   ContentStatus,
+  GpuDiagnostics,
   PersistedWindowState,
   WindowPresentationState,
 } from './types';
@@ -21,6 +22,7 @@ export const IPC_CHANNELS = {
   layoutSetContentBounds: 'layout:set-content-bounds',
   commandPaletteOpen: 'command-palette:open',
   commandPaletteClose: 'command-palette:close',
+  diagnosticsGetGpu: 'diagnostics:get-gpu',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -57,5 +59,8 @@ export interface DesktopAPI {
   };
   readonly layout: {
     readonly setContentBounds: (bounds: ContentBounds) => Promise<void>;
+  };
+  readonly diagnostics: {
+    readonly getGpuDiagnostics: () => Promise<GpuDiagnostics>;
   };
 }

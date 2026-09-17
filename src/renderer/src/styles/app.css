@@ -477,6 +477,32 @@
   cursor: pointer;
 }
 
+.gpu-dialog {
+  min-width: 340px;
+}
+
+.gpu-dialog__details {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.gpu-dialog__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.gpu-dialog__details dt {
+  color: var(--text-muted);
+}
+
+.gpu-dialog__details dd {
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

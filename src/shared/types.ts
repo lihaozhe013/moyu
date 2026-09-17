@@ -85,6 +85,17 @@ export interface ZoomState {
   readonly factor: number;
 }
 
+export interface GpuDiagnostics {
+  readonly appVersion: string;
+  readonly electronVersion: string;
+  readonly chromiumVersion: string;
+  readonly nodeVersion: string;
+  readonly platform: string;
+  readonly architecture: string;
+  readonly featureStatus: Readonly<Record<string, string>>;
+  readonly scaleFactors: readonly number[];
+}
+
 export type ValidationResult<T> =
   | { readonly success: true; readonly value: T }
   | { readonly success: false; readonly error: string };

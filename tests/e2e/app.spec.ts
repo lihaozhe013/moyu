@@ -246,6 +246,35 @@ test('reloads content and keeps zoom within the approved steps', async () => {
   await expect(shell.locator('.statusbar')).toContainText('100%');
 });
 
+test('reports WebGL capability and exposes only non-sensitive GPU diagnostics to the shell', async () => {
+  await launchApplication();
+  const shell = await application!.firstWindow();
+
+  await navigateContent(`${fixtureOrigin}/webgl`);
+  await expect.poll(async () => (await readContentSnapshot()).url).toBe(`${fixtureOrigin}/webgl`);
+  await expect
+    .poll(async () => executeContent("document.querySelector('#result').textContent"))
+    .toMatch(/^webgl-(ready|unavailable)$/);
+  expect(await executeContent('typeof window.desktopAPI')).toBe('undefined');
+
+  const diagnostics = await shell.evaluate(() =>
+    window.desktopAPI?.diagnostics.getGpuDiagnostics(),
+  );
+  expect(diagnostics).toMatchObject({
+    platform: expect.any(String),
+    architecture: expect.any(String),
+    electronVersion: expect.any(String),
+    chromiumVersion: expect.any(String),
+  });
+  expect(Array.isArray(diagnostics?.scaleFactors)).toBe(true);
+
+  await shell.keyboard.press('Control+Shift+L');
+  await shell.getByRole('textbox', { name: 'Command' }).fill('gpu');
+  await shell.getByRole('textbox', { name: 'Command' }).press('Enter');
+  await expect(shell.locator('#gpu-title')).toBeVisible();
+  await expect(shell.locator('.gpu-dialog')).toContainText('WebGL');
+});
+
 test('renders the local error overlay and recovers with Retry', async () => {
   await launchApplication(`${fixtureOrigin}/error`);
   const shell = await application!.firstWindow();
