@@ -87,7 +87,7 @@ pnpm package:win
 pnpm package:mac
 ```
 
-The bootstrap commands are now available. Commands that require later runtime features may remain intentionally minimal until their implementation phase is complete.
+The implementation commands are available. `pnpm package`, `pnpm package:win`, and `pnpm package:mac` produce reproducible unsigned artifacts until product-specific signing and notarization inputs are supplied.
 
 ## Definition of done
 

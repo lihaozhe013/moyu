@@ -259,4 +259,4 @@ Before starting Phase 0, confirm:
 - [ ] Required Windows and macOS test access is available or planned.
 - [ ] Signing/notarization responsibilities are known before release work.
 
-The next implementation target is Phase 5: interaction and desktop behavior completion.
+The implementation phases are complete through the reproducible packaging structure. Remaining work is deployment-specific: approve the final product identifier and branding, provide protected signing/notarization credentials, and collect clean Windows/macOS installation and display-matrix evidence before labeling artifacts as releases.
