@@ -1,0 +1,24 @@
+:root {
+  --titlebar-height: 32px;
+  --toolbar-height: 36px;
+  --toolrail-width: 48px;
+  --inspector-width: 280px;
+  --statusbar-height: 24px;
+
+  --bg-app: #181818;
+  --bg-panel: #202020;
+  --bg-panel-raised: #292929;
+  --bg-hover: #323232;
+  --bg-active: #3a3a3a;
+  --bg-canvas: #151515;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.62);
+  --text-disabled: rgba(255, 255, 255, 0.36);
+  --accent: #7e9dff;
+  --accent-focus: #9bb3ff;
+  --status-success: #79c99a;
+  --radius-small: 4px;
+}

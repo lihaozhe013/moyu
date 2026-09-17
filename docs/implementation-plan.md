@@ -61,7 +61,7 @@ The completed bootstrap uses the exact versions recorded in `package.json` and `
 
 The completed policy layer includes typed shared contracts, runtime validation, exact-origin navigation checks, default-deny popup decisions, bounds normalization, window-state restoration, and sanitized categorized logging. The next target is Phase 2: secure main window and local shell.
 
-## Phase 2: Secure main window and local shell
+## Phase 2: Secure main window and local shell (complete)
 
 ### Work
 
@@ -79,6 +79,8 @@ The completed policy layer includes typed shared contracts, runtime validation, 
 - Window dragging, controls, minimum dimensions, maximize/restore, and basic accessibility work.
 - Production output contains no generic Electron menu or branding.
 - Still no remote content is loaded.
+
+The completed shell includes the hidden startup window, single-instance lifecycle, platform title-bar treatment, native menu policy, accessible local workspace regions, and validated window-control IPC. The next target is Phase 3 hardening and completion of the preload/IPC surface before attaching remote content.
 
 ## Phase 3: Preload and IPC
 
@@ -245,4 +247,4 @@ Before starting Phase 0, confirm:
 - [ ] Required Windows and macOS test access is available or planned.
 - [ ] Signing/notarization responsibilities are known before release work.
 
-The next implementation target is Phase 2: secure main window and local shell.
+The next implementation target is Phase 3: preload and IPC hardening.
