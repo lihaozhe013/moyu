@@ -74,8 +74,8 @@ function installOnContents(
       return;
     }
     if (modifier && input.shift && key === 'i') {
+      event.preventDefault();
       if (config.mode === 'development' && config.development.enableDevTools) {
-        event.preventDefault();
         actions.openDevTools();
       }
       return;

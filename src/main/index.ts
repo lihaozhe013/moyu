@@ -53,6 +53,7 @@ async function createApplicationWindow(): Promise<void> {
         maximized: false,
       };
   mainWindow = createMainWindow(restoredState);
+  let lastWindowedBounds = mainWindow.getBounds();
   presentationController = createWindowPresentationController(mainWindow);
   const contentSession = createContentSession(config);
   const createdContentView = createContentView({
@@ -126,8 +127,17 @@ async function createApplicationWindow(): Promise<void> {
     if (currentWindow === null || windowStateStore === undefined) {
       return;
     }
-    const bounds = currentWindow.getBounds();
-    void windowStateStore.save({ ...bounds, maximized: currentWindow.isMaximized() });
+    const presentation = presentationController?.getState();
+    const inFullscreen =
+      presentation?.presentation === 'fullscreen' || currentWindow.isFullScreen();
+    const maximized =
+      presentation?.presentation === 'maximized' ||
+      (presentation?.presentation === 'fullscreen' &&
+        presentation.presentationBeforeFullscreen === 'maximized');
+    if (!inFullscreen && !currentWindow.isMaximized()) {
+      lastWindowedBounds = currentWindow.getBounds();
+    }
+    void windowStateStore.save({ ...lastWindowedBounds, maximized });
   };
   mainWindow.on('resize', persistWindowState);
   mainWindow.on('move', persistWindowState);

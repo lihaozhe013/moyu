@@ -21,6 +21,7 @@
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
   user-select: none;
+  -webkit-app-region: drag;
   app-region: drag;
 }
 
@@ -60,6 +61,7 @@
 .titlebar__controls {
   align-self: stretch;
   gap: 2px;
+  -webkit-app-region: no-drag;
   app-region: no-drag;
 }
 
@@ -73,6 +75,7 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
+  -webkit-app-region: no-drag;
   app-region: no-drag;
 }
 

@@ -112,7 +112,9 @@ describe('application shortcuts', () => {
       },
     );
 
-    shell.trigger({ type: 'keyDown', key: 'I', control: true, meta: false, shift: true });
+    expect(
+      shell.trigger({ type: 'keyDown', key: 'I', control: true, meta: false, shift: true }),
+    ).toBe(true);
     expect(calls).toEqual([]);
   });
 });

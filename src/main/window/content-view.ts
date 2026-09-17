@@ -6,6 +6,7 @@ import { evaluateNavigation } from '../navigation/navigation-policy';
 import { evaluatePopup } from '../navigation/popup-policy';
 import { configureContentSession } from '../security/session';
 import { applyContentBounds } from './content-layout';
+import { isCurrentContentEvent } from './content-status';
 
 const logger = createLogger('content');
 
@@ -51,6 +52,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
   const webContents = view.webContents;
   let status: ContentStatus = { type: 'idle' };
   let zoomFactor = 1;
+  let activeNavigationUrl = config.content.initialUrl;
   let disposed = false;
 
   const publishStatus = (nextStatus: ContentStatus): void => {
@@ -75,7 +77,9 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     if (decision.action === 'deny') {
       event.preventDefault();
       logger.info('Denied content navigation', { reason: decision.reason });
+      return;
     }
+    activeNavigationUrl = url;
   };
   const handleWillRedirect = (
     event: Electron.Event,
@@ -108,7 +112,10 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
   };
   const handleStartLoading = (): void => publishStatus({ type: 'loading' });
   const handleStopLoading = (): void => {
-    if (status.type === 'loading') {
+    if (
+      status.type === 'loading' &&
+      isCurrentContentEvent('', activeNavigationUrl, webContents.getURL())
+    ) {
       publishStatus({ type: 'ready' });
     }
   };
@@ -119,7 +126,11 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     _validatedURL: string,
     isMainFrame: boolean,
   ): void => {
-    if (!isMainFrame || errorCode === -3) {
+    if (
+      !isMainFrame ||
+      errorCode === -3 ||
+      !isCurrentContentEvent(_validatedURL, activeNavigationUrl, webContents.getURL())
+    ) {
       return;
     }
     event.preventDefault();
