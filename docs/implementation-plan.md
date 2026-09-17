@@ -1,6 +1,10 @@
 # Implementation Plan
 
-This plan sequences the work described by [`../SPEC.md`](../SPEC.md). Phase 0 is complete; subsequent phases are implemented in order as their inputs become available and predecessor gates pass.
+This historical plan translates the constraints in [`../SPEC.md`](../SPEC.md)
+into implementation phases. It is an execution record, not a replacement for
+the normative Agent Constraint Specification. Phase 0 is complete; subsequent
+phases are implemented in order as their inputs become available and
+predecessor gates pass.
 
 ## Guiding constraints
 

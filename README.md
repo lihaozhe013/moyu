@@ -4,7 +4,7 @@ Professional Canvas Desktop App is a planned cross-platform Electron shell for a
 
 > **Project status:** Phase 8 structurally complete. The strict TypeScript/toolchain scaffold, pure policy contracts, secure local shell, validated preload/IPC boundary, isolated content surface, desktop interactions, shortcuts, zoom, fullscreen, window-state persistence, deterministic fixtures, Electron E2E coverage, non-sensitive GPU diagnostics, packaging metadata, and CI workflows are implemented; product branding inputs, signed artifacts, and final clean-platform release verification remain pending.
 
-The normative implementation requirements live in [`SPEC.md`](./SPEC.md). The documents in [`docs/`](./docs/) explain those requirements as architecture, security, user-experience, delivery, and verification guidance. If a secondary document conflicts with `SPEC.md`, `SPEC.md` takes precedence until the conflict is deliberately resolved.
+The normative product and engineering constraints live in [`SPEC.md`](./SPEC.md). The documents in [`docs/`](./docs/) explain those constraints as architecture, security, user-experience, delivery, and verification guidance. If a secondary document conflicts with `SPEC.md`, `SPEC.md` takes precedence until the conflict is deliberately resolved.
 
 ## Product scope
 
@@ -38,7 +38,7 @@ See [`docs/architecture.md`](./docs/architecture.md) for component boundaries an
 
 | Document                                                       | Purpose                                                                               |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [`SPEC.md`](./SPEC.md)                                         | Normative implementation specification and source of truth                            |
+| [`SPEC.md`](./SPEC.md)                                         | Normative constraint reference and source of truth                                   |
 | [`docs/product-experience.md`](./docs/product-experience.md)   | Visible behavior, interaction model, platform conventions, and UX acceptance criteria |
 | [`docs/architecture.md`](./docs/architecture.md)               | Trust domains, module ownership, state, configuration, and runtime flows              |
 | [`docs/security.md`](./docs/security.md)                       | Threat model, security invariants, and review checklist                               |
