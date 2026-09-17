@@ -1680,4 +1680,4 @@ Avoid:
 * giant utility packages;
 * old Electron helper libraries duplicating current Electron APIs.
 
-For tiny utilities, write straightforward
+For tiny utilities, write straightforward local code instead of adding a dependency.
