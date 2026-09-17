@@ -2,7 +2,7 @@
 
 Professional Canvas Desktop App is a planned cross-platform Electron shell for a single, predefined web workspace. It is designed to feel like a focused creative desktop application, not a general-purpose browser.
 
-> **Project status:** Phase 0 bootstrap complete. The strict TypeScript/toolchain scaffold builds successfully; the secure desktop runtime and feature phases are still in progress.
+> **Project status:** Phase 1 complete. The strict TypeScript/toolchain scaffold and pure policy contracts build and test successfully; the secure desktop runtime and feature phases are still in progress.
 
 The normative implementation requirements live in [`SPEC.md`](./SPEC.md). The documents in [`docs/`](./docs/) explain those requirements as architecture, security, user-experience, delivery, and verification guidance. If a secondary document conflicts with `SPEC.md`, `SPEC.md` takes precedence until the conflict is deliberately resolved.
 

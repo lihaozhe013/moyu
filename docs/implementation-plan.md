@@ -41,7 +41,7 @@ This plan sequences the work described by [`../SPEC.md`](../SPEC.md). Phase 0 is
 
 The completed bootstrap uses the exact versions recorded in `package.json` and `pnpm-lock.yaml`. Product-specific origins, branding, and signing inputs remain unresolved and are intentionally not embedded in the scaffold.
 
-## Phase 1: Pure contracts and policy
+## Phase 1: Pure contracts and policy (complete)
 
 ### Work
 
@@ -58,6 +58,8 @@ The completed bootstrap uses the exact versions recorded in `package.json` and `
 - Unit tests cover positive, negative, malformed, boundary, and development/production cases.
 - Policy modules do not require a live Electron application to test.
 - Unknown configuration and navigation inputs fail closed.
+
+The completed policy layer includes typed shared contracts, runtime validation, exact-origin navigation checks, default-deny popup decisions, bounds normalization, window-state restoration, and sanitized categorized logging. The next target is Phase 2: secure main window and local shell.
 
 ## Phase 2: Secure main window and local shell
 
@@ -243,4 +245,4 @@ Before starting Phase 0, confirm:
 - [ ] Required Windows and macOS test access is available or planned.
 - [ ] Signing/notarization responsibilities are known before release work.
 
-The next implementation target is Phase 1: pure contracts and policy.
+The next implementation target is Phase 2: secure main window and local shell.
