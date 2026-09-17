@@ -189,7 +189,12 @@ export default function App(): React.JSX.Element {
       <MenuBar />
       <div className="workspace-frame">
         <ToolRail activeTool={activeTool} onToolChange={setActiveTool} />
-        <main className="content-host" aria-label="Workspace content" ref={contentHostRef}>
+        <main
+          className="content-host"
+          aria-label="Workspace content"
+          data-content-status={contentStatus.type}
+          ref={contentHostRef}
+        >
           {contentStatus.type === 'ready' ? null : (
             <div className="content-skeleton" aria-hidden="true">
               <div className="content-skeleton__topline" />

@@ -130,6 +130,7 @@ async function createApplicationWindow(): Promise<void> {
   mainWindow.on('move', persistWindowState);
   mainWindow.on('maximize', persistWindowState);
   mainWindow.on('unmaximize', persistWindowState);
+  mainWindow.on('close', persistWindowState);
   mainWindow.on('closed', () => {
     persistWindowState();
     removeShortcuts?.();

@@ -81,6 +81,7 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
     IPC_CHANNELS.contentReload,
     IPC_CHANNELS.contentHardReload,
     IPC_CHANNELS.contentSetZoomFactor,
+    IPC_CHANNELS.contentGetZoomFactor,
     IPC_CHANNELS.contentGetState,
     IPC_CHANNELS.layoutSetContentBounds,
   ] as const;

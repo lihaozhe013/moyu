@@ -2,7 +2,7 @@
 
 Professional Canvas Desktop App is a planned cross-platform Electron shell for a single, predefined web workspace. It is designed to feel like a focused creative desktop application, not a general-purpose browser.
 
-> **Project status:** Phase 5 complete. The strict TypeScript/toolchain scaffold, pure policy contracts, secure local shell, validated preload/IPC boundary, isolated content surface, desktop interactions, shortcuts, zoom, fullscreen, and window-state persistence build and test successfully; fixture, resilience, GPU, and release phases are still in progress.
+> **Project status:** Phase 6 complete. The strict TypeScript/toolchain scaffold, pure policy contracts, secure local shell, validated preload/IPC boundary, isolated content surface, desktop interactions, shortcuts, zoom, fullscreen, window-state persistence, deterministic fixtures, and Electron E2E coverage build and test successfully; GPU, performance, and release phases are still in progress.
 
 The normative implementation requirements live in [`SPEC.md`](./SPEC.md). The documents in [`docs/`](./docs/) explain those requirements as architecture, security, user-experience, delivery, and verification guidance. If a secondary document conflicts with `SPEC.md`, `SPEC.md` takes precedence until the conflict is deliberately resolved.
 
@@ -101,4 +101,4 @@ Version 1 is complete only when:
 - typecheck, lint, unit tests, build, applicable E2E tests, and packaging succeed from a frozen lockfile; and
 - release artifacts are produced with the required platform signing controls or are clearly labeled as non-release development artifacts.
 
-The current repository contains the completed work through Phase 5. Fixture-driven E2E coverage, GPU/performance validation, and release packaging remain pending.
+The current repository contains the completed work through Phase 6. GPU/performance validation and release packaging remain pending.

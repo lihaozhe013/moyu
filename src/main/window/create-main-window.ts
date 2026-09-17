@@ -10,7 +10,7 @@ export interface ShellLoadTarget {
 }
 
 function getPreloadPath(): string {
-  return join(__dirname, '../preload/index.mjs');
+  return join(__dirname, '../preload/index.cjs');
 }
 
 function getPackagedRendererPath(): string {
@@ -74,6 +74,13 @@ export function createMainWindow(restoredState?: RestoredWindowState): BrowserWi
     },
     ...(restoredState === undefined ? {} : { x: restoredState.x, y: restoredState.y }),
     ...getPlatformWindowOptions(),
+  });
+
+  mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
+    logger.error('Local shell preload failed', {
+      preloadPath,
+      error: error.message,
+    });
   });
 
   if (restoredState?.maximized === true) {

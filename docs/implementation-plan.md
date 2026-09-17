@@ -142,7 +142,7 @@ The completed content integration creates one sandboxed `WebContentsView` on a n
 
 The completed interaction layer adds a controlled command palette, application-scoped shortcuts, native windowed/maximized/fullscreen transitions, approved-step content zoom, development-only inspection access, validated window-state persistence, and an internal screenshot capture interface. The next target is Phase 6: deterministic fixtures, end-to-end coverage, and resilience checks.
 
-## Phase 6: Fixtures, E2E, and resilience (next)
+## Phase 6: Fixtures, E2E, and resilience (complete)
 
 ### Work
 
@@ -158,7 +158,9 @@ The completed interaction layer adds a controlled command palette, application-s
 - Tests do not require the production website or public network.
 - Failure output is useful without exposing sensitive content.
 
-## Phase 7: GPU and performance validation
+The completed fixture and resilience layer provides loopback routes for readiness, redirects, popups, permissions, WebGL, downloads, and deterministic recovery; Playwright Electron scenarios cover launch, containment, geometry, presentation, reload, zoom, error recovery, popup/permission denial, and content renderer crash recovery. The next target is Phase 7: GPU capability and performance validation.
+
+## Phase 7: GPU and performance validation (next)
 
 ### Work
 
