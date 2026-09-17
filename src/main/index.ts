@@ -122,7 +122,7 @@ async function createApplicationWindow(): Promise<void> {
       closePalette: () => undefined,
     },
   );
-  const persistWindowState = (): void => {
+  const persistWindowState = (updateWindowedBounds: boolean): void => {
     const currentWindow = getMainWindow();
     if (currentWindow === null || windowStateStore === undefined) {
       return;
@@ -134,18 +134,26 @@ async function createApplicationWindow(): Promise<void> {
       presentation?.presentation === 'maximized' ||
       (presentation?.presentation === 'fullscreen' &&
         presentation.presentationBeforeFullscreen === 'maximized');
-    if (!inFullscreen && !currentWindow.isMaximized()) {
+    if (
+      updateWindowedBounds &&
+      !inFullscreen &&
+      presentation?.presentation === 'windowed' &&
+      !currentWindow.isMaximized()
+    ) {
       lastWindowedBounds = currentWindow.getBounds();
     }
     void windowStateStore.save({ ...lastWindowedBounds, maximized });
   };
-  mainWindow.on('resize', persistWindowState);
-  mainWindow.on('move', persistWindowState);
-  mainWindow.on('maximize', persistWindowState);
-  mainWindow.on('unmaximize', persistWindowState);
-  mainWindow.on('close', persistWindowState);
+  const schedulePersistWindowState = (updateWindowedBounds: boolean): void => {
+    setImmediate(() => persistWindowState(updateWindowedBounds));
+  };
+  mainWindow.on('resize', () => schedulePersistWindowState(true));
+  mainWindow.on('move', () => schedulePersistWindowState(true));
+  mainWindow.on('maximize', () => persistWindowState(false));
+  mainWindow.on('unmaximize', () => persistWindowState(false));
+  mainWindow.on('close', () => persistWindowState(true));
   mainWindow.on('closed', () => {
-    persistWindowState();
+    persistWindowState(false);
     removeShortcuts?.();
     removeShortcuts = undefined;
     presentationController?.dispose();
