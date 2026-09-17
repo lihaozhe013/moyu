@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import { IPC_CHANNELS } from './channels';
-import type { ContentBounds, ContentStatus } from '../../shared/types';
+import type { ContentBounds, ContentStatus, WindowPresentationState } from '../../shared/types';
 import {
   validateSetContentBoundsPayload,
   validateSetZoomFactorPayload,
@@ -10,6 +10,11 @@ export interface IpcHandlerDependencies {
   readonly getWindow: () => BrowserWindow | null;
   readonly getContentWebContents?: () => Electron.WebContents | null;
   readonly getContentState?: () => ContentStatus;
+  readonly getContentZoomFactor?: () => number;
+  readonly setContentZoomFactor?: (factor: number) => void;
+  readonly getWindowPresentation?: () => WindowPresentationState;
+  readonly toggleMaximize?: () => void;
+  readonly toggleFullscreen?: () => void;
   readonly reloadContent?: () => Promise<void>;
   readonly hardReloadContent?: () => Promise<void>;
   readonly setContentBounds?: (bounds: ContentBounds) => void;
@@ -59,6 +64,13 @@ export function emitContentState(mainWindow: BrowserWindow | null, state: Conten
   mainWindow.webContents.send(IPC_CHANNELS.contentStateChanged, state);
 }
 
+export function emitContentZoom(mainWindow: BrowserWindow | null, factor: number): void {
+  if (mainWindow === null || mainWindow.isDestroyed()) {
+    return;
+  }
+  mainWindow.webContents.send(IPC_CHANNELS.contentZoomChanged, factor);
+}
+
 export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () => void {
   const registeredInvokeChannels = [
     IPC_CHANNELS.windowMinimize,
@@ -78,7 +90,9 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
   });
   ipcMain.handle(IPC_CHANNELS.windowToggleMaximize, (event) => {
     const mainWindow = getOwnedWindow(event, dependencies);
-    if (mainWindow.isMaximized()) {
+    if (dependencies.toggleMaximize !== undefined) {
+      dependencies.toggleMaximize();
+    } else if (mainWindow.isMaximized()) {
       mainWindow.unmaximize();
     } else {
       mainWindow.maximize();
@@ -89,19 +103,26 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
   });
   ipcMain.handle(IPC_CHANNELS.windowToggleFullscreen, (event) => {
     const mainWindow = getOwnedWindow(event, dependencies);
-    mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    if (dependencies.toggleFullscreen !== undefined) {
+      dependencies.toggleFullscreen();
+    } else {
+      mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    }
   });
   ipcMain.handle(IPC_CHANNELS.windowGetState, (event) => {
     const mainWindow = getOwnedWindow(event, dependencies);
-    return {
-      presentation: {
+    const presentation =
+      dependencies.getWindowPresentation?.() ??
+      ({
         presentation: mainWindow.isFullScreen()
           ? 'fullscreen'
           : mainWindow.isMaximized()
             ? 'maximized'
             : 'windowed',
         presentationBeforeFullscreen: mainWindow.isMaximized() ? 'maximized' : 'windowed',
-      },
+      } satisfies WindowPresentationState);
+    return {
+      presentation,
       persisted: {
         ...mainWindow.getBounds(),
         maximized: mainWindow.isMaximized(),
@@ -128,7 +149,18 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
     if (!validation.success) {
       throw new Error(validation.error);
     }
-    requireContentWebContents(dependencies).setZoomFactor(validation.value.factor);
+    if (dependencies.setContentZoomFactor !== undefined) {
+      dependencies.setContentZoomFactor(validation.value.factor);
+    } else {
+      requireContentWebContents(dependencies).setZoomFactor(validation.value.factor);
+    }
+  });
+  ipcMain.handle(IPC_CHANNELS.contentGetZoomFactor, (event) => {
+    getOwnedWindow(event, dependencies);
+    return (
+      dependencies.getContentZoomFactor?.() ??
+      requireContentWebContents(dependencies).getZoomFactor()
+    );
   });
   ipcMain.handle(IPC_CHANNELS.contentGetState, (event) => {
     getOwnedWindow(event, dependencies);

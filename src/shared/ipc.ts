@@ -14,9 +14,13 @@ export const IPC_CHANNELS = {
   contentReload: 'content:reload',
   contentHardReload: 'content:hard-reload',
   contentSetZoomFactor: 'content:set-zoom-factor',
+  contentGetZoomFactor: 'content:get-zoom-factor',
+  contentZoomChanged: 'content:zoom-changed',
   contentGetState: 'content:get-state',
   contentStateChanged: 'content:state-changed',
   layoutSetContentBounds: 'layout:set-content-bounds',
+  commandPaletteOpen: 'command-palette:open',
+  commandPaletteClose: 'command-palette:close',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -42,8 +46,14 @@ export interface DesktopAPI {
     readonly reload: () => Promise<void>;
     readonly hardReload: () => Promise<void>;
     readonly setZoomFactor: (factor: number) => Promise<void>;
+    readonly getZoomFactor: () => Promise<number>;
+    readonly onZoomChange: (listener: (factor: number) => void) => () => void;
     readonly getState: () => Promise<ContentStatus>;
     readonly onStateChange: (listener: (state: ContentStatus) => void) => () => void;
+  };
+  readonly commands: {
+    readonly onPaletteOpen: (listener: () => void) => () => void;
+    readonly onPaletteClose: (listener: () => void) => () => void;
   };
   readonly layout: {
     readonly setContentBounds: (bounds: ContentBounds) => Promise<void>;

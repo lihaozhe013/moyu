@@ -21,6 +21,10 @@ function isContentStatus(value: unknown): value is ContentStatus {
   );
 }
 
+function isFiniteZoomFactor(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0.5 && value <= 2;
+}
+
 const desktopApi: DesktopAPI = {
   window: {
     minimize: () => ipcRenderer.invoke(IPC_CHANNELS.windowMinimize),
@@ -33,6 +37,16 @@ const desktopApi: DesktopAPI = {
     reload: () => ipcRenderer.invoke(IPC_CHANNELS.contentReload),
     hardReload: () => ipcRenderer.invoke(IPC_CHANNELS.contentHardReload),
     setZoomFactor: (factor) => ipcRenderer.invoke(IPC_CHANNELS.contentSetZoomFactor, { factor }),
+    getZoomFactor: () => ipcRenderer.invoke(IPC_CHANNELS.contentGetZoomFactor),
+    onZoomChange: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, factor: unknown): void => {
+        if (isFiniteZoomFactor(factor)) {
+          listener(factor);
+        }
+      };
+      ipcRenderer.on(IPC_CHANNELS.contentZoomChanged, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.contentZoomChanged, handler);
+    },
     getState: () => ipcRenderer.invoke(IPC_CHANNELS.contentGetState),
     onStateChange: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => {
@@ -47,6 +61,18 @@ const desktopApi: DesktopAPI = {
   },
   layout: {
     setContentBounds: (bounds) => ipcRenderer.invoke(IPC_CHANNELS.layoutSetContentBounds, bounds),
+  },
+  commands: {
+    onPaletteOpen: (listener) => {
+      const handler = (): void => listener();
+      ipcRenderer.on(IPC_CHANNELS.commandPaletteOpen, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.commandPaletteOpen, handler);
+    },
+    onPaletteClose: (listener) => {
+      const handler = (): void => listener();
+      ipcRenderer.on(IPC_CHANNELS.commandPaletteClose, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.commandPaletteClose, handler);
+    },
   },
 };
 

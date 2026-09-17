@@ -120,7 +120,7 @@ The completed IPC boundary exposes only named window/content/layout operations, 
 
 The completed content integration creates one sandboxed `WebContentsView` on a named session, installs navigation/redirect, popup, permission, context-menu, and download policies before loading, synchronizes renderer geometry through validated IPC, and publishes custom loading/error/crash states to the shell. The next target is Phase 5: interaction and desktop behavior completion.
 
-## Phase 5: Interaction and desktop behavior
+## Phase 5: Interaction and desktop behavior (complete)
 
 ### Work
 
@@ -140,7 +140,9 @@ The completed content integration creates one sandboxed `WebContentsView` on a n
 - A second instance focuses/restores the existing window.
 - Production cannot open DevTools or arbitrary locations by default.
 
-## Phase 6: Fixtures, E2E, and resilience
+The completed interaction layer adds a controlled command palette, application-scoped shortcuts, native windowed/maximized/fullscreen transitions, approved-step content zoom, development-only inspection access, validated window-state persistence, and an internal screenshot capture interface. The next target is Phase 6: deterministic fixtures, end-to-end coverage, and resilience checks.
+
+## Phase 6: Fixtures, E2E, and resilience (next)
 
 ### Work
 

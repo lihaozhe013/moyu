@@ -12,6 +12,8 @@ import { ToolRail } from './components/ToolRail/ToolRail';
 export default function App(): React.JSX.Element {
   const [activeTool, setActiveTool] = useState('select');
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [zoomFactor, setZoomFactor] = useState(1);
   const [contentStatus, setContentStatus] = useState<ContentStatus>({ type: 'loading' });
   const contentHostRef = useRef<HTMLElement | null>(null);
   const isMacPlatform = navigator.platform.toLowerCase().includes('mac');
@@ -29,6 +31,36 @@ export default function App(): React.JSX.Element {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const api = window.desktopAPI;
+    if (api === undefined) {
+      return;
+    }
+
+    let active = true;
+    void api.content
+      .getZoomFactor()
+      .then((factor) => {
+        if (active) {
+          setZoomFactor(factor);
+        }
+      })
+      .catch(() => undefined);
+    const removeZoomListener = api.content.onZoomChange((factor) => {
+      if (active) {
+        setZoomFactor(factor);
+      }
+    });
+    const removeOpenListener = api.commands.onPaletteOpen(() => setPaletteOpen(true));
+    const removeCloseListener = api.commands.onPaletteClose(() => setPaletteOpen(false));
+    return () => {
+      active = false;
+      removeZoomListener();
+      removeOpenListener();
+      removeCloseListener();
+    };
   }, []);
 
   useEffect(() => {
@@ -133,6 +165,21 @@ export default function App(): React.JSX.Element {
     }
   };
 
+  const handleCommand = (query: string): void => {
+    const command = query.trim().toLowerCase();
+    setPaletteOpen(false);
+    if (command === 'about') {
+      setAboutOpen(true);
+      return;
+    }
+    if (command === 'workspace' || command === 'reload') {
+      const reload = window.desktopAPI?.content.reload;
+      if (reload !== undefined) {
+        void reload().catch(() => undefined);
+      }
+    }
+  };
+
   const showLoading = contentStatus.type === 'loading' || contentStatus.type === 'idle';
   const showError = contentStatus.type === 'error' || contentStatus.type === 'crashed';
 
@@ -167,8 +214,30 @@ export default function App(): React.JSX.Element {
         </main>
         <Inspector activeTool={activeTool} />
       </div>
-      <StatusBar activeTool={activeTool} />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <StatusBar activeTool={activeTool} zoomFactor={zoomFactor} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSubmit={handleCommand}
+        commands={['workspace', 'reload', 'about']}
+      />
+      {aboutOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setAboutOpen(false)}>
+          <section
+            className="about-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="about-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <h2 id="about-title">Professional Canvas</h2>
+            <p>Focused desktop workspace shell.</p>
+            <button type="button" onClick={() => setAboutOpen(false)}>
+              Close
+            </button>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

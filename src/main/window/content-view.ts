@@ -1,5 +1,6 @@
-import { WebContentsView, type BrowserWindow, type Session } from 'electron';
+import { Menu, WebContentsView, type BrowserWindow, type Session } from 'electron';
 import type { AppConfig, ContentBounds, ContentStatus } from '../../shared/types';
+import { nextZoomFactor, normalizeZoomFactor } from '../../shared/zoom';
 import { createLogger } from '../app/logger';
 import { evaluateNavigation } from '../navigation/navigation-policy';
 import { evaluatePopup } from '../navigation/popup-policy';
@@ -15,6 +16,11 @@ export interface ContentViewController {
   readonly reload: () => Promise<void>;
   readonly hardReload: () => Promise<void>;
   readonly setBounds: (bounds: ContentBounds) => void;
+  readonly setZoomFactor: (factor: number) => void;
+  readonly getZoomFactor: () => number;
+  readonly zoomIn: () => void;
+  readonly zoomOut: () => void;
+  readonly resetZoom: () => void;
   readonly getState: () => ContentStatus;
   readonly dispose: () => void;
 }
@@ -44,6 +50,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
   });
   const webContents = view.webContents;
   let status: ContentStatus = { type: 'idle' };
+  let zoomFactor = 1;
   let disposed = false;
 
   const publishStatus = (nextStatus: ContentStatus): void => {
@@ -85,8 +92,19 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     logger.info('Denied content popup', { reason: decision.reason });
     return { action: 'deny' };
   };
-  const handleContextMenu = (event: Electron.Event): void => {
+  const handleContextMenu = (event: Electron.Event, params: Electron.ContextMenuParams): void => {
     event.preventDefault();
+    if (config.mode === 'development' && config.development.enableDevTools) {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Inspect Element',
+          click: () => {
+            webContents.inspectElement(params.x, params.y);
+          },
+        },
+      ]);
+      menu.popup({ window: mainWindow, x: params.x, y: params.y });
+    }
   };
   const handleStartLoading = (): void => publishStatus({ type: 'loading' });
   const handleStopLoading = (): void => {
@@ -137,6 +155,16 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
   view.setBackgroundColor('#151515');
   view.setVisible(false);
 
+  const setZoomFactor = (factor: number): void => {
+    if (!disposed) {
+      zoomFactor = normalizeZoomFactor(factor);
+      webContents.setZoomFactor(zoomFactor);
+    }
+  };
+  const zoomIn = (): void => setZoomFactor(nextZoomFactor(zoomFactor, 'in'));
+  const zoomOut = (): void => setZoomFactor(nextZoomFactor(zoomFactor, 'out'));
+  const resetZoom = (): void => setZoomFactor(1);
+
   const controller: ContentViewController = {
     view,
     webContents,
@@ -171,6 +199,11 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
         applyContentBounds(view, bounds);
       }
     },
+    setZoomFactor,
+    getZoomFactor: () => zoomFactor,
+    zoomIn,
+    zoomOut,
+    resetZoom,
     getState: () => status,
     dispose: () => {
       if (disposed) {

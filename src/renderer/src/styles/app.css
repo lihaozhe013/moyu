@@ -410,6 +410,73 @@
   font-size: 11px;
 }
 
+.command-palette__commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.command-palette__command {
+  padding: 5px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.command-palette__command:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.about-dialog {
+  display: grid;
+  min-width: 280px;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--bg-panel-raised);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.about-dialog h2,
+.about-dialog p {
+  margin: 0;
+}
+
+.about-dialog h2 {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.about-dialog p {
+  color: var(--text-secondary);
+}
+
+.about-dialog button {
+  justify-self: end;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-small);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

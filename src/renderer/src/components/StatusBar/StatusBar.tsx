@@ -1,8 +1,9 @@
 interface StatusBarProps {
   readonly activeTool: string;
+  readonly zoomFactor: number;
 }
 
-export function StatusBar({ activeTool }: StatusBarProps): React.JSX.Element {
+export function StatusBar({ activeTool, zoomFactor }: StatusBarProps): React.JSX.Element {
   return (
     <footer className="statusbar" aria-label="Application status bar">
       <div className="statusbar__left">
@@ -12,7 +13,7 @@ export function StatusBar({ activeTool }: StatusBarProps): React.JSX.Element {
         <span>Tool: {activeTool}</span>
       </div>
       <div className="statusbar__right">
-        <span>100%</span>
+        <span>{Math.round(zoomFactor * 100)}%</span>
         <span className="statusbar__separator" aria-hidden="true" />
         <span>Ready</span>
       </div>

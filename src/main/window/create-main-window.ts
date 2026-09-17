@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { BrowserWindow, Menu, type BrowserWindowConstructorOptions } from 'electron';
+import type { RestoredWindowState } from '../../shared/types';
 import { createLogger } from '../app/logger';
 
 const logger = createLogger('window');
@@ -56,10 +57,10 @@ function installApplicationMenu(): void {
   Menu.setApplicationMenu(menu);
 }
 
-export function createMainWindow(): BrowserWindow {
+export function createMainWindow(restoredState?: RestoredWindowState): BrowserWindow {
   const mainWindow = new BrowserWindow({
-    width: 1600,
-    height: 1000,
+    width: restoredState?.width ?? 1600,
+    height: restoredState?.height ?? 1000,
     minWidth: 1100,
     minHeight: 700,
     show: false,
@@ -71,8 +72,13 @@ export function createMainWindow(): BrowserWindow {
       nodeIntegration: false,
       sandbox: true,
     },
+    ...(restoredState === undefined ? {} : { x: restoredState.x, y: restoredState.y }),
     ...getPlatformWindowOptions(),
   });
+
+  if (restoredState?.maximized === true) {
+    mainWindow.maximize();
+  }
 
   installApplicationMenu();
   mainWindow.on('unresponsive', () => logger.warn('Local shell became unresponsive'));

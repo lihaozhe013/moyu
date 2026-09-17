@@ -8,6 +8,9 @@ describe('runtime environment', () => {
     expect(resolveRuntimeMode({ NODE_ENV: 'production' })).toBe('production');
     expect(resolveRuntimeMode({ NODE_ENV: 'staging' })).toBe('production');
     expect(resolveRuntimeMode({})).toBe('production');
+    expect(resolveRuntimeMode({ ELECTRON_RENDERER_URL: 'http://localhost:5173/' })).toBe(
+      'development',
+    );
   });
 
   it('validates the optional renderer development URL', () => {

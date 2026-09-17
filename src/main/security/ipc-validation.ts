@@ -31,6 +31,15 @@ export function validateSetZoomFactorPayload(
   return { success: true, value: { factor } };
 }
 
+export function validateZoomFactorResult(input: unknown): input is number {
+  return (
+    typeof input === 'number' &&
+    Number.isFinite(input) &&
+    input >= MIN_ZOOM_FACTOR &&
+    input <= MAX_ZOOM_FACTOR
+  );
+}
+
 export function validatePersistedWindowState(
   input: unknown,
 ): ValidationResult<PersistedWindowState> {
