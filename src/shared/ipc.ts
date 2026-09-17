@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   contentHardReload: 'content:hard-reload',
   contentSetZoomFactor: 'content:set-zoom-factor',
   contentGetState: 'content:get-state',
+  contentStateChanged: 'content:state-changed',
   layoutSetContentBounds: 'layout:set-content-bounds',
 } as const;
 
@@ -42,6 +43,7 @@ export interface DesktopAPI {
     readonly hardReload: () => Promise<void>;
     readonly setZoomFactor: (factor: number) => Promise<void>;
     readonly getState: () => Promise<ContentStatus>;
+    readonly onStateChange: (listener: (state: ContentStatus) => void) => () => void;
   };
   readonly layout: {
     readonly setContentBounds: (bounds: ContentBounds) => Promise<void>;

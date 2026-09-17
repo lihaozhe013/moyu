@@ -82,7 +82,7 @@ The completed policy layer includes typed shared contracts, runtime validation, 
 
 The completed shell includes the hidden startup window, single-instance lifecycle, platform title-bar treatment, native menu policy, accessible local workspace regions, and validated window-control IPC. The next target is Phase 3 hardening and completion of the preload/IPC surface before attaching remote content.
 
-## Phase 3: Preload and IPC
+## Phase 3: Preload and IPC (complete)
 
 ### Work
 
@@ -97,6 +97,8 @@ The completed shell includes the hidden startup window, single-instance lifecycl
 - The renderer cannot access `ipcRenderer`, Node.js, Electron modules, filesystem, process, shell, or child-process APIs.
 - Calls from unexpected senders and malformed payloads are rejected by tests.
 - Window controls operate only through the typed bridge.
+
+The completed IPC boundary exposes only named window/content/layout operations, validates shell sender frames and payloads in the main process, provides typed content-state events, and fails explicitly when the content surface is not initialized. The next target is Phase 4: isolated content integration.
 
 ## Phase 4: Isolated content integration
 
@@ -247,4 +249,4 @@ Before starting Phase 0, confirm:
 - [ ] Required Windows and macOS test access is available or planned.
 - [ ] Signing/notarization responsibilities are known before release work.
 
-The next implementation target is Phase 3: preload and IPC hardening.
+The next implementation target is Phase 4: isolated content integration.

@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import { resolveRendererDevServerUrl } from './app/environment';
 import { acquireSingleInstanceLock, focusExistingWindow } from './app/single-instance';
 import { createMainWindow, loadLocalShell } from './window/create-main-window';
-import { registerWindowIpcHandlers } from './ipc/handlers';
+import { registerIpcHandlers } from './ipc/handlers';
 
 let mainWindow: BrowserWindow | null = null;
 let removeIpcHandlers: (() => void) | undefined;
@@ -18,7 +18,7 @@ async function createApplicationWindow(): Promise<void> {
   }
 
   mainWindow = createMainWindow();
-  removeIpcHandlers = registerWindowIpcHandlers(getMainWindow);
+  removeIpcHandlers = registerIpcHandlers({ getWindow: getMainWindow });
   mainWindow.on('closed', () => {
     removeIpcHandlers?.();
     removeIpcHandlers = undefined;

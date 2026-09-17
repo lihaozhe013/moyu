@@ -10,17 +10,23 @@ const desktopApi: DesktopAPI = {
     getState: () => ipcRenderer.invoke(IPC_CHANNELS.windowGetState),
   },
   content: {
-    reload: async () => {
-      throw new Error('The content surface is not initialized.');
-    },
-    hardReload: async () => {
-      throw new Error('The content surface is not initialized.');
-    },
+    reload: () => ipcRenderer.invoke(IPC_CHANNELS.contentReload),
+    hardReload: () => ipcRenderer.invoke(IPC_CHANNELS.contentHardReload),
     setZoomFactor: (factor) => ipcRenderer.invoke(IPC_CHANNELS.contentSetZoomFactor, { factor }),
-    getState: async () => ({ type: 'idle' }),
+    getState: () => ipcRenderer.invoke(IPC_CHANNELS.contentGetState),
+    onStateChange: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => {
+        if (typeof state !== 'object' || state === null || !('type' in state)) {
+          return;
+        }
+        listener(state as Parameters<typeof listener>[0]);
+      };
+      ipcRenderer.on(IPC_CHANNELS.contentStateChanged, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.contentStateChanged, handler);
+    },
   },
   layout: {
-    setContentBounds: async () => undefined,
+    setContentBounds: (bounds) => ipcRenderer.invoke(IPC_CHANNELS.layoutSetContentBounds, bounds),
   },
 };
 
