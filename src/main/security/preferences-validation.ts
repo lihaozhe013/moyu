@@ -55,14 +55,26 @@ export function validateShortcutBinding(input: unknown): ValidationResult<Shortc
   };
 }
 
+const explicitSchemePattern = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+const knownSchemePattern = /^(?:https?|file|data|ftp|ws|wss):/i;
+
 export function normalizeWorkspaceUrl(value: unknown): ValidationResult<string> {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return { success: false, error: 'Workspace URL must be a non-empty string.' };
   }
 
+  const trimmed = value.trim();
+  // Bare hosts such as "google.com" or "localhost:3000" would fail URL parsing,
+  // so they get an https scheme instead of being rejected. Known schemes like
+  // file: or data: never use a host and must stay untouched.
+  const candidate =
+    explicitSchemePattern.test(trimmed) || knownSchemePattern.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+
   let parsed: URL;
   try {
-    parsed = new URL(value.trim());
+    parsed = new URL(candidate);
   } catch {
     return { success: false, error: 'Workspace URL must be a valid URL.' };
   }

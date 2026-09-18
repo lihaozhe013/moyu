@@ -293,7 +293,7 @@ function SettingsApp(): React.JSX.Element {
               setWorkspaceUrl(event.target.value);
               updateDraft();
             }}
-            placeholder="https://workspace.example.com/"
+            placeholder="workspace.example.com"
             spellCheck={false}
             autoComplete="off"
           />

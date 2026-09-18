@@ -4,7 +4,7 @@
   "headerHint": "{{modifier}}+, to open",
   "loading": "Loading settings…",
   "workspaceHeading": "Workspace URL",
-  "workspaceHelp": "Enter any URL that Electron can load, including local HTTP pages, LAN pages, and pages with their own authentication or permissions.",
+  "workspaceHelp": "Enter any URL that Electron can load, including local HTTP pages, LAN pages, and pages with their own authentication or permissions. The https:// prefix is added automatically when omitted.",
   "urlLabel": "URL",
   "windowHeading": "Window Dragging",
   "windowHelp": "Enable drag mode to move the workspace window by dragging anywhere in it, and to resize it freely from its edges. While drag mode is on, clicks and scrolling in the workspace move the window instead of reaching the page.",

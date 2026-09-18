@@ -4,7 +4,7 @@
   "headerHint": "{{modifier}}+，打开设置",
   "loading": "正在加载设置……",
   "workspaceHeading": "工作区 URL",
-  "workspaceHelp": "输入任意 Electron 可以加载的 URL，包括本地 HTTP 页面、局域网页面，以及自带认证或权限的页面。",
+  "workspaceHelp": "输入任意 Electron 可以加载的 URL，包括本地 HTTP 页面、局域网页面，以及自带认证或权限的页面。省略 https:// 前缀时会自动补全。",
   "urlLabel": "URL",
   "windowHeading": "窗口拖拽",
   "windowHelp": "开启拖拽模式后，按住工作区窗口的任意位置即可移动窗口，也可以通过窗口边缘自由调整尺寸。拖拽模式开启期间，工作区内的点击和滚动会变成移动窗口的手势，不会作用于页面。",

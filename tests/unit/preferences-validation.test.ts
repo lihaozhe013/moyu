@@ -26,6 +26,23 @@ describe('preference validation', () => {
     expect(normalizeWorkspaceUrl('data:text/html,<h1>workspace</h1>').success).toBe(true);
   });
 
+  it('assumes https for hosts typed without a scheme', () => {
+    expect(normalizeWorkspaceUrl(' google.com ')).toEqual({
+      success: true,
+      value: 'https://google.com/',
+    });
+    expect(normalizeWorkspaceUrl('localhost:3000/app?tab=2')).toEqual({
+      success: true,
+      value: 'https://localhost:3000/app?tab=2',
+    });
+    expect(normalizeWorkspaceUrl('10.0.0.1:8080')).toEqual({
+      success: true,
+      value: 'https://10.0.0.1:8080/',
+    });
+    expect(normalizeWorkspaceUrl('http://intranet.local').success).toBe(true);
+    expect(normalizeWorkspaceUrl('not a url').success).toBe(false);
+  });
+
   it('recovers valid fields from partially corrupt preferences', () => {
     const result = sanitizeAppPreferences(
       {
