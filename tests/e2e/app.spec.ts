@@ -51,7 +51,7 @@ async function navigateContent(url: string): Promise<void> {
     if (child?.webContents === undefined) {
       throw new Error('Content view is not available.');
     }
-    void child.webContents.loadURL(targetUrl);
+    return child.webContents.loadURL(targetUrl);
   }, url);
 }
 

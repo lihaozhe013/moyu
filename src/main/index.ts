@@ -280,8 +280,15 @@ async function createApplicationWindow(): Promise<void> {
     }
 
     const previousUrl = activeConfig.content.initialUrl;
+    if (preferencesStore === undefined) {
+      return {
+        success: false,
+        fieldErrors: { form: 'Settings storage is not available.' },
+        message: 'Settings storage is not available.',
+      };
+    }
     try {
-      await preferencesStore?.update({
+      await preferencesStore.update({
         workspaceUrl: draft.workspaceUrl,
         shortcuts: commandValidation.overrides,
       });
