@@ -349,7 +349,7 @@ test('toggles whole-window drag mode from the command palette', async () => {
   const shell = await application!.firstWindow();
 
   const runToggleCommand = async (): Promise<void> => {
-    await shell.keyboard.press(`${primaryModifier}+Shift+P`);
+    await shell.keyboard.press(`${primaryModifier}+K`);
     await expect(
       shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
     ).toBeVisible();
@@ -425,7 +425,7 @@ test('opens and closes the command palette through the application shortcut', as
   await launchApplication();
   const shell = await application!.firstWindow();
 
-  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
+  await shell.keyboard.press(`${primaryModifier}+K`);
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toBeVisible();
@@ -596,7 +596,7 @@ test('clears drag mode when the workspace URL changes in Settings', async () => 
     .toBe('');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
-  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
+  await shell.keyboard.press(`${primaryModifier}+K`);
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toBeVisible();
@@ -824,7 +824,7 @@ test('reports WebGL capability and exposes only non-sensitive GPU diagnostics to
   });
   expect(Array.isArray(diagnostics?.scaleFactors)).toBe(true);
 
-  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
+  await shell.keyboard.press(`${primaryModifier}+K`);
   await shell.getByRole('textbox', { name: 'Command' }).fill('gpu');
   await shell.getByRole('textbox', { name: 'Command' }).press('Enter');
   await expect(shell.locator('#gpu-title')).toBeVisible();
@@ -905,6 +905,6 @@ test('switches the interface language from the settings window', async () => {
   await expect(settings.locator('.settings-footer__status')).toContainText('保存成功');
 
   await shell.bringToFront();
-  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
+  await shell.keyboard.press(`${primaryModifier}+K`);
   await expect(shell.locator('#command-palette-title')).toContainText('命令面板');
 });

@@ -169,6 +169,9 @@ async function createApplicationWindow(): Promise<void> {
       case 'shell.about':
       case 'shell.gpuDiagnostics':
         contentView?.setOverlayVisible(true);
+        // The palette renders in the shell renderer, so it must steal focus
+        // back from the workspace WebContentsView for the input to receive keys.
+        currentWindow?.webContents.focus();
         currentWindow?.webContents.send(IPC_CHANNELS.commandPaletteOpen);
         return;
     }
@@ -251,7 +254,6 @@ async function createApplicationWindow(): Promise<void> {
     if (currentWindow !== null && commandRegistry !== undefined) {
       removeSettingsShortcuts = installShortcutHandler(
         settingsWindow.window.webContents,
-        currentWindow.webContents,
         commandRegistry,
         environmentConfig,
         'settings',

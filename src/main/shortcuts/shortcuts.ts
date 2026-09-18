@@ -1,5 +1,4 @@
 import type { WebContents } from 'electron';
-import { IPC_CHANNELS } from '../ipc/channels';
 import type { AppConfig, CommandId } from '../../shared/types';
 import type { ShortcutInput } from '../../shared/commands';
 import type { CommandRegistry, CommandSurface } from '../commands/command-registry';
@@ -67,7 +66,6 @@ function toShortcutInput(input: BeforeInputEvent): ShortcutInput {
 
 export function installShortcutHandler(
   contents: WebContents,
-  paletteContents: WebContents,
   registry: CommandRegistry,
   config: AppConfig,
   surface: CommandSurface,
@@ -105,10 +103,6 @@ export function installShortcutHandler(
     }
 
     event.preventDefault();
-    if (commandId === 'palette.open') {
-      paletteContents.send(IPC_CHANNELS.commandPaletteOpen);
-      return;
-    }
     actions.executeCommand(commandId);
   };
 
@@ -127,7 +121,6 @@ export function installApplicationShortcuts(
 ): () => void {
   const removeShellHandler = installShortcutHandler(
     shellContents,
-    shellContents,
     registry,
     config,
     'workspace',
@@ -138,7 +131,6 @@ export function installApplicationShortcuts(
       ? () => undefined
       : installShortcutHandler(
           contentContents,
-          shellContents,
           registry,
           config,
           'workspace',

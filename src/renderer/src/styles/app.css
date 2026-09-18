@@ -236,7 +236,8 @@
 }
 
 .command-palette__command:hover,
-.command-palette__command:focus-visible {
+.command-palette__command:focus-visible,
+.command-palette__command--active {
   border-color: var(--border-strong);
   background: var(--bg-hover);
   color: var(--text-primary);

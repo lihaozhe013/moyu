@@ -13,8 +13,8 @@ describe('command registry contracts', () => {
     const macMinimize = mac.find((definition) => definition.id === 'window.minimize');
     const windowsMinimize = windows.find((definition) => definition.id === 'window.minimize');
 
-    expect(macMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['meta'] });
-    expect(windowsMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['control'] });
+    expect(macMinimize?.defaultBinding).toEqual({ code: 'KeyW', modifiers: ['meta'] });
+    expect(windowsMinimize?.defaultBinding).toEqual({ code: 'KeyW', modifiers: ['control'] });
 
     const macDrag = mac.find((definition) => definition.id === 'window.toggleDrag');
     expect(macDrag).toMatchObject({
@@ -60,12 +60,12 @@ describe('command registry contracts', () => {
 
   it('matches configured bindings for the active surface', () => {
     const registry = createCommandRegistry('win32', {
-      'content.reload': { code: 'KeyK', modifiers: ['control'] },
+      'content.reload': { code: 'KeyJ', modifiers: ['control'] },
     });
 
     expect(
       registry.match(
-        { code: 'KeyK', alt: false, control: true, meta: false, shift: false },
+        { code: 'KeyJ', alt: false, control: true, meta: false, shift: false },
         'workspace',
         false,
       ),

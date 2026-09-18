@@ -15,7 +15,6 @@ interface TriggeredInput {
 class FakeContents {
   private listener:
     ((event: { preventDefault: () => void }, input: TriggeredInput) => void) | undefined;
-  readonly sent: string[] = [];
 
   on(_event: 'before-input-event', listener: typeof this.listener): this {
     this.listener = listener;
@@ -27,10 +26,6 @@ class FakeContents {
       this.listener = undefined;
     }
     return this;
-  }
-
-  send(channel: string): void {
-    this.sent.push(channel);
   }
 
   trigger(input: TriggeredInput): boolean {
@@ -66,9 +61,8 @@ describe('application shortcuts', () => {
     );
 
     expect(
-      content.trigger({ type: 'keyDown', key: 'P', control: true, meta: false, shift: true }),
+      content.trigger({ type: 'keyDown', key: 'K', control: true, meta: false, shift: false }),
     ).toBe(true);
-    expect(shell.sent).toEqual(['command-palette:open']);
     expect(
       content.trigger({ type: 'keyDown', key: 'R', control: true, meta: false, shift: true }),
     ).toBe(true);
@@ -78,11 +72,16 @@ describe('application shortcuts', () => {
     expect(
       content.trigger({ type: 'keyDown', key: 'F11', control: false, meta: false, shift: false }),
     ).toBe(true);
-    expect(calls).toEqual(['content.hardReload', 'content.zoomIn', 'window.toggleFullscreen']);
+    expect(calls).toEqual([
+      'palette.open',
+      'content.hardReload',
+      'content.zoomIn',
+      'window.toggleFullscreen',
+    ]);
 
     remove();
     content.trigger({ type: 'keyDown', key: 'R', control: true, meta: false, shift: false });
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(4);
   });
 
   it('ignores removed default bindings such as development tools', () => {

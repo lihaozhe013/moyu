@@ -337,6 +337,11 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
       overlayVisible = visible;
       if (resources !== null) {
         resources.view.setVisible(status.type === 'ready' && !overlayVisible);
+        // Overlays such as the command palette move focus to the shell, so it
+        // must return to the page once they stop covering the workspace.
+        if (!visible && status.type === 'ready' && !resources.webContents.isDestroyed()) {
+          resources.webContents.focus();
+        }
       }
     },
     setWindowDragMode: (active) => {

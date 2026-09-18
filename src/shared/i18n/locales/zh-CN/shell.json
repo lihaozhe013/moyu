@@ -19,6 +19,6 @@
     "commandAria": "命令",
     "availableAria": "可用命令",
     "empty": "无匹配命令",
-    "hint": "Enter 运行 · Escape 关闭"
+    "hint": "方向键选择 · Enter 运行 · Escape 关闭"
   }
 }

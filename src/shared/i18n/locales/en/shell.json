@@ -19,6 +19,6 @@
     "commandAria": "Command",
     "availableAria": "Available commands",
     "empty": "No matching commands",
-    "hint": "Enter to run · Escape to close"
+    "hint": "Arrow keys to select · Enter to run · Escape to close"
   }
 }
