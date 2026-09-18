@@ -2,7 +2,7 @@ import { app, BrowserWindow, screen } from 'electron';
 import { resolveRendererDevServerUrl } from './app/environment';
 import { acquireSingleInstanceLock, focusExistingWindow } from './app/single-instance';
 import { createLogger } from './app/logger';
-import type { DisplayWorkArea, RestoredWindowState } from '../shared/types';
+import type { CommandId, DisplayWorkArea, RestoredWindowState } from '../shared/types';
 import { resolveAppConfigFromEnvironment } from './security/config';
 import { createContentSession } from './security/session';
 import { createContentView, type ContentViewController } from './window/content-view';
@@ -11,7 +11,8 @@ import { emitContentState, emitContentZoom, registerIpcHandlers } from './ipc/ha
 import { installApplicationShortcuts } from './shortcuts/shortcuts';
 import { createWindowPresentationController } from './window/fullscreen';
 import { restoreWindowState } from './window/window-state';
-import { createWindowStateStore, type WindowStateStore } from './window/window-state-store';
+import { createPreferencesStore, type PreferencesStore } from './preferences/store';
+import { createCommandRegistry, type CommandRegistry } from './commands/command-registry';
 import { collectGpuDiagnostics } from './gpu/diagnostics';
 import { installShellContentSecurityPolicy } from './security/csp';
 
@@ -20,7 +21,8 @@ let contentView: ContentViewController | null = null;
 let removeIpcHandlers: (() => void) | undefined;
 let removeShortcuts: (() => void) | undefined;
 let presentationController: ReturnType<typeof createWindowPresentationController> | undefined;
-let windowStateStore: WindowStateStore | undefined;
+let preferencesStore: PreferencesStore | undefined;
+let commandRegistry: CommandRegistry | undefined;
 const logger = createLogger('app');
 
 function getMainWindow(): BrowserWindow | null {
@@ -34,25 +36,89 @@ async function createApplicationWindow(): Promise<void> {
   }
 
   const config = resolveAppConfigFromEnvironment();
-  windowStateStore = createWindowStateStore(app.getPath('userData'));
   const displays = screen.getAllDisplays().map((display): DisplayWorkArea => display.workArea);
   const primaryDisplay: DisplayWorkArea = screen.getPrimaryDisplay().workArea;
-  const persistedState = await windowStateStore.load();
+  const fallbackWindow: RestoredWindowState = {
+    width: 1600,
+    height: 1000,
+    x: primaryDisplay.x + Math.round((primaryDisplay.width - 1600) / 2),
+    y: primaryDisplay.y + Math.round((primaryDisplay.height - 1000) / 2),
+    maximized: false,
+  };
+  preferencesStore = createPreferencesStore(app.getPath('userData'), fallbackWindow);
+  const preferences = await preferencesStore.load();
+  commandRegistry = createCommandRegistry(
+    process.platform === 'darwin' ? 'darwin' : 'win32',
+    preferences.shortcuts,
+  );
   const restoredResult = restoreWindowState(
-    persistedState ?? { width: 1600, height: 1000, maximized: false },
+    preferences.window,
     displays,
     primaryDisplay,
   );
   const restoredState: RestoredWindowState = restoredResult.success
     ? restoredResult.value
-    : {
-        width: 1600,
-        height: 1000,
-        x: primaryDisplay.x + Math.round((primaryDisplay.width - 1600) / 2),
-        y: primaryDisplay.y + Math.round((primaryDisplay.height - 1000) / 2),
-        maximized: false,
-      };
-  mainWindow = createMainWindow(restoredState);
+    : fallbackWindow;
+  const executeCommand = (commandId: CommandId): void => {
+    const currentWindow = getMainWindow();
+    if (currentWindow === null) {
+      return;
+    }
+    switch (commandId) {
+      case 'window.minimize':
+        currentWindow.minimize();
+        break;
+      case 'window.toggleMaximize':
+        presentationController?.toggleMaximize();
+        break;
+      case 'window.close':
+        currentWindow.close();
+        break;
+      case 'app.quit':
+        app.quit();
+        break;
+      case 'window.toggleFullscreen':
+        presentationController?.toggleFullscreen();
+        break;
+      case 'content.reload':
+        void contentView?.reload().catch(() => undefined);
+        break;
+      case 'content.hardReload':
+        void contentView?.hardReload().catch(() => undefined);
+        break;
+      case 'content.zoomReset':
+        if (contentView !== null) {
+          contentView.resetZoom();
+          emitContentZoom(getMainWindow(), contentView.getZoomFactor());
+        }
+        break;
+      case 'content.zoomIn':
+        if (contentView !== null) {
+          contentView.zoomIn();
+          emitContentZoom(getMainWindow(), contentView.getZoomFactor());
+        }
+        break;
+      case 'content.zoomOut':
+        if (contentView !== null) {
+          contentView.zoomOut();
+          emitContentZoom(getMainWindow(), contentView.getZoomFactor());
+        }
+        break;
+      case 'palette.open':
+        currentWindow.webContents.send('command-palette:open');
+        break;
+      case 'settings.open':
+      case 'settings.save':
+      case 'shell.about':
+      case 'shell.gpuDiagnostics':
+      case 'devtools.open':
+        break;
+    }
+  };
+  mainWindow = createMainWindow(restoredState, {
+    commandRegistry,
+    executeCommand,
+  });
   let lastWindowedBounds = mainWindow.getBounds();
   presentationController = createWindowPresentationController(mainWindow);
   const contentSession = createContentSession(config);
@@ -98,33 +164,23 @@ async function createApplicationWindow(): Promise<void> {
     mainWindow.webContents,
     createdContentView.webContents,
     config,
+    commandRegistry,
     {
-      reloadContent: () => {
-        void createdContentView.reload().catch(() => undefined);
+      executeCommand: (commandId) => {
+        if (commandId === 'devtools.open' && config.mode === 'development') {
+          createdContentView.webContents.openDevTools({ mode: 'detach' });
+          return;
+        }
+        executeCommand(commandId);
       },
-      hardReloadContent: () => {
-        void createdContentView.hardReload().catch(() => undefined);
+      dismissOverlays: () => {
+        mainWindow?.webContents.send('command-palette:close');
       },
-      toggleFullscreen: () => presentationController?.toggleFullscreen(),
-      resetZoom: () => {
-        createdContentView.resetZoom();
-        emitContentZoom(getMainWindow(), createdContentView.getZoomFactor());
-      },
-      zoomIn: () => {
-        createdContentView.zoomIn();
-        emitContentZoom(getMainWindow(), createdContentView.getZoomFactor());
-      },
-      zoomOut: () => {
-        createdContentView.zoomOut();
-        emitContentZoom(getMainWindow(), createdContentView.getZoomFactor());
-      },
-      openDevTools: () => createdContentView.webContents.openDevTools({ mode: 'detach' }),
-      closePalette: () => undefined,
     },
   );
   const persistWindowState = (updateWindowedBounds: boolean): void => {
     const currentWindow = getMainWindow();
-    if (currentWindow === null || windowStateStore === undefined) {
+    if (currentWindow === null || preferencesStore === undefined) {
       return;
     }
     const presentation = presentationController?.getState();
@@ -142,7 +198,9 @@ async function createApplicationWindow(): Promise<void> {
     ) {
       lastWindowedBounds = currentWindow.getBounds();
     }
-    void windowStateStore.save({ ...lastWindowedBounds, maximized });
+    void preferencesStore
+      .update({ window: { ...lastWindowedBounds, maximized } })
+      .catch((error: unknown) => logger.warn('Failed to persist application preferences', { error }));
   };
   const schedulePersistWindowState = (updateWindowedBounds: boolean): void => {
     setImmediate(() => persistWindowState(updateWindowedBounds));
@@ -162,8 +220,9 @@ async function createApplicationWindow(): Promise<void> {
     contentView = null;
     removeIpcHandlers?.();
     removeIpcHandlers = undefined;
-    void windowStateStore?.flush();
-    windowStateStore = undefined;
+    void preferencesStore?.flush();
+    preferencesStore = undefined;
+    commandRegistry = undefined;
     mainWindow = null;
   });
 

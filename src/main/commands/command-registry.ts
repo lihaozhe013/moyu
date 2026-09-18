@@ -134,6 +134,10 @@ export function createCommandRegistry(
     match: (input, surface, allowDevelopment) => {
       for (const definition of definitions) {
         if (definition.devOnly && !allowDevelopment) {
+          const binding = getBinding(definition.id);
+          if (binding !== undefined && shortcutBindingEquals(binding, shortcutBindingFromInput(input))) {
+            return definition.id;
+          }
           continue;
         }
         if (!isScopeAllowed(definition.scope, surface)) {

@@ -292,3 +292,29 @@ export function formatShortcutBinding(
   const key = keyLabels[bindingValue.code] ?? bindingValue.code.replace(/^Key|^Digit/, '');
   return `${modifierText}${key}`;
 }
+
+export function toElectronAccelerator(
+  bindingValue: ShortcutBinding | undefined,
+  platform: SupportedPlatform,
+): string | undefined {
+  if (bindingValue === undefined) {
+    return undefined;
+  }
+  const modifierLabels: Record<ShortcutModifier, string> =
+    platform === 'darwin'
+      ? { alt: 'Alt', control: 'Ctrl', meta: 'Command', shift: 'Shift' }
+      : { alt: 'Alt', control: 'Ctrl', meta: 'Super', shift: 'Shift' };
+  const modifiers = [...bindingValue.modifiers]
+    .sort((left, right) => ['control', 'meta', 'alt', 'shift'].indexOf(left) - ['control', 'meta', 'alt', 'shift'].indexOf(right))
+    .map((modifier) => modifierLabels[modifier]);
+  const keyLabels: Record<string, string> = {
+    Comma: ',',
+    Equal: '+',
+    Minus: '-',
+    Period: '.',
+    Slash: '/',
+    Space: 'Space',
+  };
+  const key = keyLabels[bindingValue.code] ?? bindingValue.code.replace(/^Key|^Digit/, '');
+  return [...modifiers, key].join('+');
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AppConfig } from '../../src/shared/types';
+import { createCommandRegistry } from '../../src/main/commands/command-registry';
 import { installApplicationShortcuts } from '../../src/main/shortcuts/shortcuts';
 
 interface TriggeredInput {
@@ -54,19 +55,19 @@ describe('application shortcuts', () => {
     const shell = new FakeContents();
     const content = new FakeContents();
     const calls: string[] = [];
-    const remove = installApplicationShortcuts(shell as never, content as never, config, {
-      reloadContent: () => calls.push('reload'),
-      hardReloadContent: () => calls.push('hard-reload'),
-      toggleFullscreen: () => calls.push('fullscreen'),
-      resetZoom: () => calls.push('reset-zoom'),
-      zoomIn: () => calls.push('zoom-in'),
-      zoomOut: () => calls.push('zoom-out'),
-      openDevTools: () => calls.push('devtools'),
-      closePalette: () => calls.push('close-palette'),
-    });
+    const remove = installApplicationShortcuts(
+      shell as never,
+      content as never,
+      config,
+      createCommandRegistry('win32'),
+      {
+        executeCommand: (commandId) => calls.push(commandId),
+        dismissOverlays: () => calls.push('dismiss'),
+      },
+    );
 
     expect(
-      content.trigger({ type: 'keyDown', key: 'L', control: false, meta: true, shift: true }),
+      content.trigger({ type: 'keyDown', key: 'L', control: true, meta: false, shift: true }),
     ).toBe(true);
     expect(shell.sent).toEqual(['command-palette:open']);
     expect(
@@ -81,7 +82,12 @@ describe('application shortcuts', () => {
     expect(
       shell.trigger({ type: 'keyDown', key: 'I', control: true, meta: false, shift: true }),
     ).toBe(true);
-    expect(calls).toEqual(['hard-reload', 'zoom-in', 'fullscreen', 'devtools']);
+    expect(calls).toEqual([
+      'content.hardReload',
+      'content.zoomIn',
+      'window.toggleFullscreen',
+      'devtools.open',
+    ]);
 
     remove();
     content.trigger({ type: 'keyDown', key: 'R', control: true, meta: false, shift: false });
@@ -100,15 +106,14 @@ describe('application shortcuts', () => {
         mode: 'production',
         development: { enableDevTools: false, allowArbitraryNavigation: false },
       },
+      createCommandRegistry('win32'),
       {
-        reloadContent: () => undefined,
-        hardReloadContent: () => undefined,
-        toggleFullscreen: () => undefined,
-        resetZoom: () => undefined,
-        zoomIn: () => undefined,
-        zoomOut: () => undefined,
-        openDevTools: () => calls.push('devtools'),
-        closePalette: () => undefined,
+        executeCommand: (commandId) => {
+          if (commandId !== 'devtools.open') {
+            calls.push(commandId);
+          }
+        },
+        dismissOverlays: () => undefined,
       },
     );
 

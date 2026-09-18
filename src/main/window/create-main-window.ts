@@ -1,5 +1,8 @@
 import { join } from 'node:path';
 import { BrowserWindow, Menu, type BrowserWindowConstructorOptions } from 'electron';
+import type { CommandId } from '../../shared/types';
+import { toElectronAccelerator } from '../../shared/commands';
+import type { CommandRegistry } from '../commands/command-registry';
 import type { RestoredWindowState } from '../../shared/types';
 import { createLogger } from '../app/logger';
 
@@ -7,6 +10,11 @@ const logger = createLogger('window');
 
 export interface ShellLoadTarget {
   readonly rendererDevServerUrl?: string;
+}
+
+export interface MainWindowOptions {
+  readonly commandRegistry: CommandRegistry;
+  readonly executeCommand: (commandId: CommandId) => void;
 }
 
 function getPreloadPath(): string {
@@ -18,29 +26,36 @@ function getPackagedRendererPath(): string {
 }
 
 function getPlatformWindowOptions(): Partial<BrowserWindowConstructorOptions> {
-  if (process.platform === 'darwin') {
-    return {
-      titleBarStyle: 'hiddenInset',
-      trafficLightPosition: { x: 14, y: 9 },
-    };
-  }
-
   return {
     frame: false,
   };
 }
 
-function installApplicationMenu(): void {
+export function installApplicationMenu(
+  commandRegistry: CommandRegistry,
+  executeCommand: (commandId: CommandId) => void,
+): void {
   if (process.platform !== 'darwin') {
     Menu.setApplicationMenu(null);
     return;
   }
 
+  const settingsAccelerator = toElectronAccelerator(
+    commandRegistry.getBinding('settings.open'),
+    'darwin',
+  );
+  const quitAccelerator = toElectronAccelerator(commandRegistry.getBinding('app.quit'), 'darwin');
   const menu = Menu.buildFromTemplate([
     {
       label: 'Professional Canvas',
       submenu: [
         { role: 'about' },
+        { type: 'separator' },
+        {
+          label: 'Settings…',
+          ...(settingsAccelerator === undefined ? {} : { accelerator: settingsAccelerator }),
+          click: () => executeCommand('settings.open'),
+        },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -48,7 +63,10 @@ function installApplicationMenu(): void {
         { role: 'hideOthers' },
         { role: 'unhide' },
         { type: 'separator' },
-        { role: 'quit' },
+        {
+          role: 'quit',
+          ...(quitAccelerator === undefined ? {} : { accelerator: quitAccelerator }),
+        },
       ],
     },
     { role: 'editMenu' },
@@ -57,7 +75,10 @@ function installApplicationMenu(): void {
   Menu.setApplicationMenu(menu);
 }
 
-export function createMainWindow(restoredState?: RestoredWindowState): BrowserWindow {
+export function createMainWindow(
+  restoredState: RestoredWindowState | undefined,
+  options: MainWindowOptions,
+): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: restoredState?.width ?? 1600,
     height: restoredState?.height ?? 1000,
@@ -87,7 +108,10 @@ export function createMainWindow(restoredState?: RestoredWindowState): BrowserWi
     mainWindow.maximize();
   }
 
-  installApplicationMenu();
+  if (process.platform === 'darwin') {
+    mainWindow.setWindowButtonVisibility(false);
+  }
+  installApplicationMenu(options.commandRegistry, options.executeCommand);
   mainWindow.on('unresponsive', () => logger.warn('Local shell became unresponsive'));
   mainWindow.on('responsive', () => logger.info('Local shell became responsive'));
   mainWindow.once('ready-to-show', () => {
