@@ -97,4 +97,35 @@ describe('preference validation', () => {
       validateSettingsDraft({ workspaceUrl: 'https://user:pass@example.test/', shortcuts: {} }),
     ).toMatchObject({ success: true });
   });
+
+  it('carries the language preference through drafts and persistence', () => {
+    expect(
+      validateSettingsDraft({
+        workspaceUrl: 'https://workspace.example.test/',
+        language: 'zh-CN',
+        shortcuts: {},
+      }),
+    ).toMatchObject({ success: true, value: { language: 'zh-CN' } });
+    expect(
+      validateSettingsDraft({
+        workspaceUrl: 'https://workspace.example.test/',
+        language: 'fr',
+        shortcuts: {},
+      }).success,
+    ).toBe(false);
+
+    const result = sanitizeAppPreferences(
+      { version: 1, shortcuts: {}, window: fallbackWindow, language: 'zh-CN' },
+      fallbackWindow,
+    );
+    expect(result.preferences.language).toBe('zh-CN');
+    expect(result.issues).toHaveLength(0);
+
+    const invalid = sanitizeAppPreferences(
+      { version: 1, shortcuts: {}, window: fallbackWindow, language: 'de' },
+      fallbackWindow,
+    );
+    expect(invalid.preferences.language).toBeUndefined();
+    expect(invalid.issues).toContain('Preferences language is invalid.');
+  });
 });

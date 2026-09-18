@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface ErrorOverlayProps {
   readonly title?: string;
   readonly description?: string;
@@ -5,19 +7,20 @@ interface ErrorOverlayProps {
 }
 
 export function ErrorOverlay({
-  title = 'Unable to load workspace',
-  description = 'The workspace is not available right now. Try again when your connection is ready.',
+  title,
+  description,
   errorCode,
 }: ErrorOverlayProps): React.JSX.Element {
+  const { t } = useTranslation('errors');
   return (
     <div className="error-overlay" role="alert">
       <div className="error-overlay__icon" aria-hidden="true">
         !
       </div>
-      <h2>{title}</h2>
-      <p>{description}</p>
-      {errorCode === undefined ? null : <span>Error code: {errorCode}</span>}
-      <span className="error-overlay__hint">Use the Reload Workspace shortcut to try again.</span>
+      <h2>{title ?? t('loadFailedTitle')}</h2>
+      <p>{description ?? t('loadFailedDescription')}</p>
+      {errorCode === undefined ? null : <span>{t('errorCode', { code: errorCode })}</span>}
+      <span className="error-overlay__hint">{t('reloadHint')}</span>
     </div>
   );
 }

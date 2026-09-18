@@ -4,10 +4,10 @@ export type CommandScope = 'application' | 'settings' | 'workspace';
 export type CommandActivation = 'press' | 'hold';
 export type SupportedPlatform = 'darwin' | 'win32';
 
+// Localized text is resolved by callers through the `commands` i18n namespace,
+// keyed as `commands:<id>.label` and `commands:<id>.description`.
 export interface CommandDefinition {
   readonly id: CommandId;
-  readonly label: string;
-  readonly description: string;
   readonly scope: CommandScope;
   readonly activation: CommandActivation;
   readonly customizable: boolean;
@@ -89,8 +89,6 @@ export function createCommandDefinitions(
   return [
     {
       id: 'settings.open',
-      label: 'Open Settings',
-      description: 'Open or focus the application settings window.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -99,8 +97,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'settings.save',
-      label: 'Save Settings',
-      description: 'Save pending settings changes.',
       scope: 'settings',
       activation: 'press',
       customizable: true,
@@ -109,8 +105,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'palette.open',
-      label: 'Open Command Palette',
-      description: 'Show the keyboard command palette.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -119,8 +113,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'window.minimize',
-      label: 'Minimize Window',
-      description: 'Minimize the primary workspace window.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -129,8 +121,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'window.toggleMaximize',
-      label: 'Maximize or Restore Window',
-      description: 'Toggle the primary workspace between maximized and windowed.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -139,8 +129,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'window.close',
-      label: 'Close Window',
-      description: 'Close the focused application window.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -149,8 +137,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'app.quit',
-      label: 'Quit Application',
-      description: 'Quit the desktop application.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -159,8 +145,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'window.toggleFullscreen',
-      label: 'Toggle Fullscreen',
-      description: 'Enter or leave native fullscreen presentation.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -170,8 +154,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'content.reload',
-      label: 'Reload Workspace',
-      description: 'Reload the remote workspace content.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -180,8 +162,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'content.hardReload',
-      label: 'Hard Reload Workspace',
-      description: 'Reload the remote workspace while ignoring cache.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -190,8 +170,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'content.zoomReset',
-      label: 'Reset Content Zoom',
-      description: 'Reset the workspace content zoom to 100 percent.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -200,8 +178,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'content.zoomIn',
-      label: 'Increase Content Zoom',
-      description: 'Increase the workspace content zoom.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -210,8 +186,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'content.zoomOut',
-      label: 'Decrease Content Zoom',
-      description: 'Decrease the workspace content zoom.',
       scope: 'application',
       activation: 'press',
       customizable: true,
@@ -220,8 +194,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'shell.about',
-      label: 'About moyu',
-      description: 'Show application information.',
       scope: 'application',
       activation: 'press',
       customizable: false,
@@ -230,8 +202,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'shell.gpuDiagnostics',
-      label: 'GPU Diagnostics',
-      description: 'Show non-sensitive GPU capability diagnostics.',
       scope: 'application',
       activation: 'press',
       customizable: false,
@@ -240,8 +210,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'devtools.open',
-      label: 'Open Content DevTools',
-      description: 'Open developer tools for the workspace content.',
       scope: 'application',
       activation: 'press',
       customizable: false,
@@ -250,8 +218,6 @@ export function createCommandDefinitions(
     },
     {
       id: 'window.drag',
-      label: 'Hold to Drag Window',
-      description: 'Hold the shortcut and drag anywhere in the workspace.',
       scope: 'workspace',
       activation: 'hold',
       customizable: true,
@@ -302,9 +268,10 @@ export function shortcutBindingMatchesInput(
 export function formatShortcutBinding(
   bindingValue: ShortcutBinding | undefined,
   platform: SupportedPlatform = 'win32',
+  paletteOnlyLabel = 'Palette only',
 ): string {
   if (bindingValue === undefined) {
-    return 'Palette only';
+    return paletteOnlyLabel;
   }
   const modifierLabels: Record<ShortcutModifier, string> =
     platform === 'darwin'

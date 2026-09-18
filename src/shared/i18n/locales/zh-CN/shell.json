@@ -1,0 +1,24 @@
+{
+  "workspaceAria": "工作区内容",
+  "emptyTitle": "尚未配置工作区",
+  "emptyHint": "使用已配置的快捷键打开设置，添加工作区 URL。",
+  "loading": "正在加载工作区",
+  "aboutTagline": "专注的桌面工作区外壳。",
+  "pressEscapeToClose": "按 Escape 关闭。",
+  "gpuTitle": "GPU 诊断",
+  "gpuReading": "正在读取能力状态……",
+  "gpuElectron": "Electron",
+  "gpuChromium": "Chromium",
+  "gpuPlatform": "平台",
+  "gpuScale": "缩放",
+  "gpuWebgl": "WebGL",
+  "unknown": "未知",
+  "palette": {
+    "title": "命令面板",
+    "searchPlaceholder": "搜索命令",
+    "commandAria": "命令",
+    "availableAria": "可用命令",
+    "empty": "无匹配命令",
+    "hint": "Enter 运行 · Escape 关闭"
+  }
+}

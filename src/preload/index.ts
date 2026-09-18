@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopAPI } from '../shared/ipc';
-import type { ContentStatus, GpuDiagnostics } from '../shared/types';
+import type { ContentStatus, GpuDiagnostics, LanguageState } from '../shared/types';
+import { isAppLanguage, isLanguagePreference } from '../shared/i18n/languages';
 
 const IPC_CHANNELS = {
   windowMinimize: 'window:minimize',
@@ -23,25 +24,60 @@ const IPC_CHANNELS = {
   commandsExecute: 'commands:execute',
   shellSetOverlayVisible: 'shell:set-overlay-visible',
   diagnosticsGetGpu: 'diagnostics:get-gpu',
+  localeGetState: 'locale:get-state',
+  localeChanged: 'locale:changed',
 } as const;
 
 function isContentStatus(value: unknown): value is ContentStatus {
   if (typeof value !== 'object' || value === null || !('type' in value)) {
     return false;
   }
-  const candidate = value as { type?: unknown; code?: unknown; description?: unknown };
+  const candidate = value as {
+    type?: unknown;
+    code?: unknown;
+    description?: unknown;
+    messageKey?: unknown;
+    messageParams?: unknown;
+  };
   if (candidate.type === 'idle' || candidate.type === 'loading' || candidate.type === 'ready') {
     return true;
   }
   if (candidate.type === 'crashed') {
     return true;
   }
-  return (
-    candidate.type === 'error' &&
-    typeof candidate.code === 'number' &&
-    Number.isFinite(candidate.code) &&
-    typeof candidate.description === 'string'
-  );
+  if (
+    candidate.type !== 'error' ||
+    typeof candidate.code !== 'number' ||
+    !Number.isFinite(candidate.code) ||
+    typeof candidate.description !== 'string'
+  ) {
+    return false;
+  }
+  if (candidate.messageKey !== undefined && typeof candidate.messageKey !== 'string') {
+    return false;
+  }
+  if (candidate.messageParams !== undefined) {
+    const params = candidate.messageParams;
+    if (typeof params !== 'object' || params === null || Array.isArray(params)) {
+      return false;
+    }
+    if (
+      !Object.values(params as Record<string, unknown>).every(
+        (param) => typeof param === 'string' || typeof param === 'number',
+      )
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isLanguageState(value: unknown): value is LanguageState {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as { preference?: unknown; resolved?: unknown };
+  return isLanguagePreference(candidate.preference) && isAppLanguage(candidate.resolved);
 }
 
 function isFiniteZoomFactor(value: unknown): value is number {
@@ -129,6 +165,24 @@ const desktopApi: DesktopAPI = {
   },
   layout: {
     setContentBounds: (bounds) => ipcRenderer.invoke(IPC_CHANNELS.layoutSetContentBounds, bounds),
+  },
+  locale: {
+    getState: async () => {
+      const result: unknown = await ipcRenderer.invoke(IPC_CHANNELS.localeGetState);
+      if (!isLanguageState(result)) {
+        throw new Error('Language state response is invalid.');
+      }
+      return result;
+    },
+    onChanged: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => {
+        if (isLanguageState(state)) {
+          listener(state);
+        }
+      };
+      ipcRenderer.on(IPC_CHANNELS.localeChanged, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.localeChanged, handler);
+    },
   },
   diagnostics: {
     getGpuDiagnostics: async () => {

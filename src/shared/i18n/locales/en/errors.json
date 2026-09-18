@@ -1,0 +1,10 @@
+{
+  "loadFailedTitle": "Unable to load workspace",
+  "loadFailedDescription": "The workspace is not available right now. Try again when your connection is ready.",
+  "reloadHint": "Use the Reload Workspace shortcut to try again.",
+  "errorCode": "Error code: {{code}}",
+  "crashedTitle": "Workspace stopped unexpectedly",
+  "crashedDescription": "The workspace renderer stopped. Use the Reload Workspace shortcut to continue.",
+  "stateUnavailable": "The workspace state could not be read.",
+  "gpuUnavailable": "GPU diagnostics are unavailable."
+}

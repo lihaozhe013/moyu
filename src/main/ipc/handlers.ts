@@ -5,6 +5,7 @@ import type {
   ContentBounds,
   ContentStatus,
   GpuDiagnostics,
+  LanguageState,
   WindowPresentationState,
 } from '../../shared/types';
 import { isCommandId, type CommandSummary } from '../../shared/commands';
@@ -27,6 +28,7 @@ export interface IpcHandlerDependencies {
   readonly setContentBounds?: (bounds: ContentBounds) => void;
   readonly getGpuDiagnostics?: () => GpuDiagnostics;
   readonly getCommandSummaries?: () => readonly CommandSummary[];
+  readonly getLanguageState?: () => LanguageState;
   readonly executeCommand?: (commandId: CommandId) => void;
   readonly setOverlayVisible?: (visible: boolean) => void;
 }
@@ -103,6 +105,7 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
     IPC_CHANNELS.commandsGetSummaries,
     IPC_CHANNELS.commandsExecute,
     IPC_CHANNELS.shellSetOverlayVisible,
+    IPC_CHANNELS.localeGetState,
   ] as const;
 
   ipcMain.handle(IPC_CHANNELS.windowMinimize, (event) => {
@@ -214,6 +217,10 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
       throw new Error('Command ID is invalid.');
     }
     dependencies.executeCommand?.(input);
+  });
+  ipcMain.handle(IPC_CHANNELS.localeGetState, (event) => {
+    getOwnedWindow(event, dependencies);
+    return dependencies.getLanguageState?.() ?? { preference: 'system', resolved: 'en' };
   });
   ipcMain.handle(IPC_CHANNELS.shellSetOverlayVisible, (event, input: unknown) => {
     getOwnedWindow(event, dependencies);

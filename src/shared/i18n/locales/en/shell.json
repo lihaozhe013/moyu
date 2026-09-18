@@ -1,0 +1,24 @@
+{
+  "workspaceAria": "Workspace content",
+  "emptyTitle": "No workspace configured",
+  "emptyHint": "Open Settings with the configured shortcut to add a workspace URL.",
+  "loading": "Loading workspace",
+  "aboutTagline": "Focused desktop workspace shell.",
+  "pressEscapeToClose": "Press Escape to close.",
+  "gpuTitle": "GPU diagnostics",
+  "gpuReading": "Reading capability status…",
+  "gpuElectron": "Electron",
+  "gpuChromium": "Chromium",
+  "gpuPlatform": "Platform",
+  "gpuScale": "Scale",
+  "gpuWebgl": "WebGL",
+  "unknown": "unknown",
+  "palette": {
+    "title": "Command Palette",
+    "searchPlaceholder": "Search commands",
+    "commandAria": "Command",
+    "availableAria": "Available commands",
+    "empty": "No matching commands",
+    "hint": "Enter to run · Escape to close"
+  }
+}

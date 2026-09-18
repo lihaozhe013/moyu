@@ -1,6 +1,8 @@
 :root {
   color-scheme: dark;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   color: rgba(255, 255, 255, 0.92);
   background: #181818;
   font-synthesis: none;
@@ -147,6 +149,10 @@ h2 {
 
 .text-input:focus {
   border-color: #7e9dff;
+}
+
+select.text-input {
+  color-scheme: dark;
 }
 
 .text-input--error {

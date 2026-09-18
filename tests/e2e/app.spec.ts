@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
@@ -251,8 +251,19 @@ async function launchApplication(
   initialUrl = fixtureUrl,
   enableDevTools = false,
   runtimeMode: 'test' | 'production' = 'test',
+  language: 'en' | 'zh-CN' = 'en',
 ): Promise<void> {
   userDataPath = await mkdtemp(join(tmpdir(), 'moyu-e2e-'));
+  await writeFile(
+    join(userDataPath, 'preferences.json'),
+    JSON.stringify({
+      version: 1,
+      language,
+      shortcuts: {},
+      window: { width: 1200, height: 800, x: 60, y: 60, maximized: false },
+    }),
+    'utf8',
+  );
   application = await electron.launch({
     args: [mainEntry, `--user-data-dir=${userDataPath}`],
     env: {
@@ -837,4 +848,49 @@ test('keeps the shell alive after a content renderer crash and reloads it', asyn
   await shell.keyboard.press(primaryShortcut('R'));
   await expect(shell.locator('.error-overlay')).toHaveCount(0, { timeout: 15_000 });
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
+});
+
+test('renders the shell and settings window in Simplified Chinese when zh-CN is preferred', async () => {
+  await launchApplication('', false, 'test', 'zh-CN');
+  const shell = await application!.firstWindow();
+  await expect(shell.locator('.empty-workspace strong')).toContainText('尚未配置工作区');
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'))!;
+  await settings.waitForSelector('.settings-window');
+  await expect(settings.locator('.settings-header h1')).toContainText('设置');
+  await expect(settings.getByRole('button', { name: '保存', exact: true })).toBeVisible();
+});
+
+test('switches the interface language from the settings window', async () => {
+  await launchApplication();
+  const shell = await application!.firstWindow();
+  await shell.keyboard.press(primaryShortcut(','));
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'))!;
+  await settings.waitForSelector('.settings-window');
+  await settings.selectOption('#language-select', 'zh-CN');
+  await settings.keyboard.press(primaryShortcut('S'));
+  await expect(settings.locator('.settings-footer__status')).toContainText('保存成功');
+
+  await shell.bringToFront();
+  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
+  await expect(shell.locator('#command-palette-title')).toContainText('命令面板');
 });

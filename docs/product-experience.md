@@ -71,6 +71,14 @@ editing and conflict feedback continue to use the existing typed Settings IPC
 contract. Settings has no persistent top drag strip and never responds to the
 workspace window-drag shortcut.
 
+## Language
+
+The interface supports English and Simplified Chinese. The default follows the
+operating system language. Settings exposes a display-language selector, and a
+language change applies immediately across the shell, the command palette, and
+the settings window without a restart. Command searches match labels in every
+supported language.
+
 ## Loading and recovery
 
 The shell shows a loading overlay while a content generation loads. Electron

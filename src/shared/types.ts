@@ -1,4 +1,5 @@
 import type { CommandSummary } from './commands';
+import type { AppLanguage, LanguagePreference } from './i18n/languages';
 
 export type AppMode = 'development' | 'production' | 'test';
 
@@ -34,7 +35,13 @@ export type ContentStatus =
   | { type: 'idle' }
   | { type: 'loading' }
   | { type: 'ready' }
-  | { type: 'error'; code: number; description: string }
+  | {
+      type: 'error';
+      code: number;
+      description: string;
+      messageKey?: string;
+      messageParams?: Readonly<Record<string, string | number>>;
+    }
   | { type: 'crashed' };
 
 export interface ContentBounds {
@@ -83,18 +90,26 @@ export interface PersistedWindowState {
 export interface AppPreferencesV1 {
   readonly version: 1;
   readonly workspaceUrl?: string;
+  readonly language?: LanguagePreference;
   readonly shortcuts: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
   readonly window: PersistedWindowState;
 }
 
+export interface LanguageState {
+  readonly preference: LanguagePreference;
+  readonly resolved: AppLanguage;
+}
+
 export interface SettingsSnapshot {
   readonly workspaceUrl?: string;
+  readonly language?: LanguageState;
   readonly commands: readonly CommandSummary[];
   readonly shortcutOverrides: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
 }
 
 export interface SettingsDraft {
   readonly workspaceUrl: string;
+  readonly language?: LanguagePreference;
   readonly shortcuts: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
 }
 

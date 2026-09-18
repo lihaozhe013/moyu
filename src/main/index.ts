@@ -28,6 +28,7 @@ import { installApplicationShortcuts, installShortcutHandler } from './shortcuts
 import { createWindowPresentationController } from './window/fullscreen';
 import { restoreWindowState } from './window/window-state';
 import { createPreferencesStore, type PreferencesStore } from './preferences/store';
+import { applyLanguagePreference, getLanguageState, initMainLocale } from './i18n';
 import {
   createCommandRegistry,
   validateCommandOverrides,
@@ -73,6 +74,7 @@ async function createApplicationWindow(): Promise<void> {
   };
   preferencesStore = createPreferencesStore(app.getPath('userData'), fallbackWindow);
   const preferences = await preferencesStore.load();
+  initMainLocale(preferences.language ?? 'system', app.getLocale());
   let activeConfig = environmentConfig;
   if (preferences.workspaceUrl !== undefined) {
     try {
@@ -299,6 +301,7 @@ async function createApplicationWindow(): Promise<void> {
       await preferencesStore.update({
         workspaceUrl: draft.workspaceUrl,
         shortcuts: commandValidation.overrides,
+        ...(draft.language === undefined ? {} : { language: draft.language }),
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Settings could not be saved.';
@@ -307,6 +310,13 @@ async function createApplicationWindow(): Promise<void> {
 
     registry.setOverrides(commandValidation.overrides);
     activeConfig = nextConfig;
+    if (draft.language !== undefined) {
+      const previousState = getLanguageState();
+      const nextState = applyLanguagePreference(draft.language);
+      if (previousState.resolved !== nextState.resolved) {
+        getMainWindow()?.webContents.send(IPC_CHANNELS.localeChanged, nextState);
+      }
+    }
     let workspaceReloadStarted = false;
     if (contentView === null) {
       const created = createWorkspaceContent(nextConfig);
@@ -332,6 +342,7 @@ async function createApplicationWindow(): Promise<void> {
       ...(activeConfig.content.initialUrl === undefined
         ? {}
         : { workspaceUrl: activeConfig.content.initialUrl }),
+      language: getLanguageState(),
       commands: registry
         .getSummaries()
         .filter(
@@ -395,6 +406,7 @@ async function createApplicationWindow(): Promise<void> {
       contentView?.setBounds(bounds);
     },
     getGpuDiagnostics: collectGpuDiagnostics,
+    getLanguageState,
     getCommandSummaries: () =>
       registry
         .getSummaries()

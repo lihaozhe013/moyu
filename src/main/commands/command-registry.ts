@@ -11,6 +11,7 @@ import {
   type SupportedPlatform,
 } from '../../shared/commands';
 import { validateShortcutBinding } from '../security/preferences-validation';
+import { translate } from '../i18n';
 
 export type CommandSurface = 'workspace' | 'settings';
 
@@ -114,8 +115,8 @@ export function createCommandRegistry(
   const getSummaries = (): readonly CommandSummary[] => {
     return definitions.map((definition) => ({
       id: definition.id,
-      label: definition.label,
-      description: definition.description,
+      label: translate(`commands:${definition.id}.label`),
+      description: translate(`commands:${definition.id}.description`),
       scope: definition.scope,
       activation: definition.activation,
       customizable: definition.customizable,

@@ -8,6 +8,7 @@ import type {
   ValidationResult,
 } from '../../shared/types';
 import { isCommandId, shortcutBindingKey } from '../../shared/commands';
+import { isLanguagePreference, type LanguagePreference } from '../../shared/i18n/languages';
 
 const shortcutModifiers = new Set<ShortcutModifier>(['alt', 'control', 'meta', 'shift']);
 const shortcutCodes =
@@ -76,13 +77,18 @@ export interface SanitizedPreferences {
 export function validateSettingsDraft(input: unknown): ValidationResult<SettingsDraft> {
   if (
     !isRecord(input) ||
-    Object.keys(input).some((key) => key !== 'workspaceUrl' && key !== 'shortcuts')
+    Object.keys(input).some(
+      (key) => key !== 'workspaceUrl' && key !== 'language' && key !== 'shortcuts',
+    )
   ) {
     return { success: false, error: 'Settings draft contains an unknown field.' };
   }
   const workspaceUrl = normalizeWorkspaceUrl(input.workspaceUrl);
   if (!workspaceUrl.success) {
     return workspaceUrl;
+  }
+  if (input.language !== undefined && !isLanguagePreference(input.language)) {
+    return { success: false, error: 'Settings language preference is invalid.' };
   }
   if (!isRecord(input.shortcuts)) {
     return { success: false, error: 'Settings shortcuts must be an object.' };
@@ -100,7 +106,14 @@ export function validateSettingsDraft(input: unknown): ValidationResult<Settings
     shortcuts[commandId] = binding.value;
   }
 
-  return { success: true, value: { workspaceUrl: workspaceUrl.value, shortcuts } };
+  return {
+    success: true,
+    value: {
+      workspaceUrl: workspaceUrl.value,
+      ...(input.language === undefined ? {} : { language: input.language }),
+      shortcuts,
+    },
+  };
 }
 
 function fallbackPreferences(window: PersistedWindowState): AppPreferencesV1 {
@@ -185,6 +198,15 @@ export function sanitizeAppPreferences(
     }
   }
 
+  let language: LanguagePreference | undefined;
+  if (input.language !== undefined) {
+    if (isLanguagePreference(input.language)) {
+      language = input.language;
+    } else {
+      issues.push('Preferences language is invalid.');
+    }
+  }
+
   let window = fallbackWindow;
   if (input.window !== undefined) {
     const sanitizedWindow = sanitizeWindowState(input.window, fallbackWindow);
@@ -223,6 +245,7 @@ export function sanitizeAppPreferences(
     preferences: {
       version: 1,
       ...(workspaceUrl === undefined ? {} : { workspaceUrl }),
+      ...(language === undefined ? {} : { language }),
       shortcuts,
       window,
     },

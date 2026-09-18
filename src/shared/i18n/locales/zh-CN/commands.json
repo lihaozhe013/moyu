@@ -1,0 +1,71 @@
+{
+  "settings.open": {
+    "label": "打开设置",
+    "description": "打开或聚焦应用设置窗口。"
+  },
+  "settings.save": {
+    "label": "保存设置",
+    "description": "保存待处理的设置更改。"
+  },
+  "palette.open": {
+    "label": "打开命令面板",
+    "description": "显示键盘命令面板。"
+  },
+  "window.minimize": {
+    "label": "最小化窗口",
+    "description": "最小化主工作区窗口。"
+  },
+  "window.toggleMaximize": {
+    "label": "最大化或还原窗口",
+    "description": "在主工作区最大化与窗口模式之间切换。"
+  },
+  "window.close": {
+    "label": "关闭窗口",
+    "description": "关闭当前聚焦的应用窗口。"
+  },
+  "app.quit": {
+    "label": "退出应用",
+    "description": "退出桌面应用。"
+  },
+  "window.toggleFullscreen": {
+    "label": "切换全屏",
+    "description": "进入或退原生全屏模式。"
+  },
+  "content.reload": {
+    "label": "重新加载工作区",
+    "description": "重新加载远程工作区内容。"
+  },
+  "content.hardReload": {
+    "label": "强制重新加载工作区",
+    "description": "忽略缓存并重新加载远程工作区内容。"
+  },
+  "content.zoomReset": {
+    "label": "重置内容缩放",
+    "description": "将工作区内容缩放重置为 100%。"
+  },
+  "content.zoomIn": {
+    "label": "放大内容缩放",
+    "description": "增大工作区内容缩放。"
+  },
+  "content.zoomOut": {
+    "label": "缩小内容缩放",
+    "description": "减小工作区内容缩放。"
+  },
+  "shell.about": {
+    "label": "关于 moyu",
+    "description": "显示应用信息。"
+  },
+  "shell.gpuDiagnostics": {
+    "label": "GPU 诊断",
+    "description": "显示非敏感的 GPU 能力诊断信息。"
+  },
+  "devtools.open": {
+    "label": "打开内容 DevTools",
+    "description": "打开工作区内容的开发者工具。"
+  },
+  "window.drag": {
+    "label": "按住以拖动窗口",
+    "description": "按住快捷键并在工作区任意位置拖动。"
+  },
+  "paletteOnly": "仅面板"
+}

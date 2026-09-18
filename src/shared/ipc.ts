@@ -2,6 +2,7 @@ import type {
   ContentBounds,
   ContentStatus,
   GpuDiagnostics,
+  LanguageState,
   PersistedWindowState,
   WindowPresentationState,
 } from './types';
@@ -34,6 +35,8 @@ export const IPC_CHANNELS = {
   settingsCloseRequested: 'settings:close-requested',
   settingsDismissRequested: 'settings:dismiss-requested',
   diagnosticsGetGpu: 'diagnostics:get-gpu',
+  localeGetState: 'locale:get-state',
+  localeChanged: 'locale:changed',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -73,6 +76,10 @@ export interface DesktopAPI {
   };
   readonly layout: {
     readonly setContentBounds: (bounds: ContentBounds) => Promise<void>;
+  };
+  readonly locale: {
+    readonly getState: () => Promise<LanguageState>;
+    readonly onChanged: (listener: (state: LanguageState) => void) => () => void;
   };
   readonly diagnostics: {
     readonly getGpuDiagnostics: () => Promise<GpuDiagnostics>;

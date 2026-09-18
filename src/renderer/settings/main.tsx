@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import type {
   CommandId,
   SettingsDraft,
@@ -7,9 +8,14 @@ import type {
   ShortcutBinding,
 } from '../../shared/types';
 import { formatShortcutBinding } from '../../shared/commands';
+import type { LanguagePreference } from '../../shared/i18n/languages';
+import { createRendererI18n } from '../../shared/i18n/react';
+import { commandSearchText } from '../../shared/i18n/search';
 import './styles.css';
 
 type Platform = 'darwin' | 'win32';
+
+const settingsI18n = createRendererI18n();
 
 function getPlatform(): Platform {
   return navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'win32';
@@ -29,9 +35,11 @@ function isModifierOnly(event: KeyboardEvent): boolean {
 }
 
 function SettingsApp(): React.JSX.Element {
+  const { t } = useTranslation(['settings', 'commands']);
   const platform = getPlatform();
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [workspaceUrl, setWorkspaceUrl] = useState('');
+  const [language, setLanguage] = useState<LanguagePreference>('system');
   const [shortcuts, setShortcuts] = useState<Partial<Record<CommandId, ShortcutBinding>>>({});
   const [search, setSearch] = useState('');
   const [captureCommand, setCaptureCommand] = useState<CommandId | null>(null);
@@ -42,6 +50,12 @@ function SettingsApp(): React.JSX.Element {
   const [dirty, setDirty] = useState(false);
   const urlRef = useRef<HTMLInputElement | null>(null);
 
+  const applyLanguageState = (state: SettingsSnapshot['language']): void => {
+    if (state === undefined) return;
+    setLanguage(state.preference);
+    void settingsI18n.changeLanguage(state.resolved);
+  };
+
   const reloadSnapshot = (): void => {
     const api = window.settingsAPI;
     if (api === undefined) return;
@@ -51,6 +65,7 @@ function SettingsApp(): React.JSX.Element {
         setSnapshot(next);
         setWorkspaceUrl(next.workspaceUrl ?? '');
         setShortcuts({ ...next.shortcutOverrides });
+        applyLanguageState(next.language);
         setDirty(false);
         setFieldErrors({});
         setNotice(null);
@@ -59,7 +74,7 @@ function SettingsApp(): React.JSX.Element {
         window.setTimeout(() => urlRef.current?.focus(), 0);
       })
       .catch((error: unknown) => {
-        setNotice(error instanceof Error ? error.message : 'Settings could not be loaded.');
+        setNotice(error instanceof Error ? error.message : t('notices.loadFailed'));
       });
   };
 
@@ -95,7 +110,7 @@ function SettingsApp(): React.JSX.Element {
     return (snapshot?.commands ?? []).filter((command) => {
       if (command.devOnly) return false;
       if (query.length === 0) return true;
-      return `${command.label} ${command.description}`.toLowerCase().includes(query);
+      return commandSearchText(settingsI18n, command).includes(query);
     });
   }, [search, snapshot]);
 
@@ -114,7 +129,7 @@ function SettingsApp(): React.JSX.Element {
   function startCapture(commandId: CommandId): void {
     setCaptureCommand(commandId);
     setCaptureError(null);
-    setNotice('Press a key combination. Escape cancels recording.');
+    setNotice(t('notices.captureHint'));
     void window.settingsAPI?.settings.setCaptureMode(true).catch(() => undefined);
   }
 
@@ -131,7 +146,7 @@ function SettingsApp(): React.JSX.Element {
     if (code.length === 0) return;
     const modifiers = getModifiers(event.nativeEvent);
     if (modifiers.length === 0 && !/^F(?:[1-9]|1[0-2])$/.test(code)) {
-      setCaptureError('A printable key must include Ctrl, Cmd, Alt, or Shift.');
+      setCaptureError(t('notices.capturePrintable'));
       return;
     }
     setShortcuts((current) => ({
@@ -160,9 +175,9 @@ function SettingsApp(): React.JSX.Element {
     if (snapshot === null || captureCommand !== null) return;
     const api = window.settingsAPI;
     if (api === undefined) return;
-    setNotice('Saving…');
+    setNotice(t('notices.saving'));
     setFieldErrors({});
-    const draft: SettingsDraft = { workspaceUrl, shortcuts };
+    const draft: SettingsDraft = { workspaceUrl, language, shortcuts };
     try {
       const result = await api.settings.save(draft);
       if (!result.success) {
@@ -173,12 +188,16 @@ function SettingsApp(): React.JSX.Element {
       setSnapshot(result.snapshot);
       setWorkspaceUrl(result.snapshot.workspaceUrl ?? workspaceUrl);
       setShortcuts({ ...result.snapshot.shortcutOverrides });
+      applyLanguageState(result.snapshot.language);
       setDirty(false);
+      // Resolved after the language switch so the confirmation uses the new language.
       setNotice(
-        result.workspaceReloadStarted ? 'Saved. Workspace loading…' : 'Saved successfully.',
+        result.workspaceReloadStarted
+          ? settingsI18n.t('settings:notices.savedReloading')
+          : settingsI18n.t('settings:notices.saved'),
       );
     } catch (error: unknown) {
-      setNotice(error instanceof Error ? error.message : 'Settings could not be saved.');
+      setNotice(error instanceof Error ? error.message : t('notices.saveFailed'));
     }
   }
 
@@ -217,7 +236,7 @@ function SettingsApp(): React.JSX.Element {
   }
 
   if (snapshot === null) {
-    return <main className="settings-loading">Loading settings…</main>;
+    return <main className="settings-loading">{t('loading')}</main>;
   }
 
   return (
@@ -225,11 +244,11 @@ function SettingsApp(): React.JSX.Element {
       <header className="settings-header">
         <div>
           <p className="settings-eyebrow">MOYU</p>
-          <h1>Settings</h1>
-          <p className="settings-subtitle">Configure the workspace and keyboard-first controls.</p>
+          <h1>{t('title')}</h1>
+          <p className="settings-subtitle">{t('subtitle')}</p>
         </div>
         <div className="settings-header__hint">
-          {platform === 'darwin' ? '⌘' : 'Ctrl'}+, to open
+          {t('headerHint', { modifier: platform === 'darwin' ? '⌘' : 'Ctrl' })}
         </div>
       </header>
 
@@ -237,15 +256,12 @@ function SettingsApp(): React.JSX.Element {
         <section className="settings-section" aria-labelledby="workspace-heading">
           <div className="settings-section__heading">
             <div>
-              <h2 id="workspace-heading">Workspace URL</h2>
-              <p>
-                Enter any URL that Electron can load, including local HTTP pages, LAN pages, and
-                pages with their own authentication or permissions.
-              </p>
+              <h2 id="workspace-heading">{t('workspaceHeading')}</h2>
+              <p>{t('workspaceHelp')}</p>
             </div>
           </div>
           <label className="field-label" htmlFor="workspace-url">
-            URL
+            {t('urlLabel')}
           </label>
           <input
             ref={urlRef}
@@ -266,28 +282,50 @@ function SettingsApp(): React.JSX.Element {
           ) : null}
         </section>
 
+        <section className="settings-section" aria-labelledby="language-heading">
+          <div className="settings-section__heading">
+            <div>
+              <h2 id="language-heading">{t('languageHeading')}</h2>
+              <p>{t('languageHelp')}</p>
+            </div>
+          </div>
+          <label className="field-label" htmlFor="language-select">
+            {t('languageLabel')}
+          </label>
+          <select
+            id="language-select"
+            className="text-input"
+            value={language}
+            onChange={(event) => {
+              setLanguage(event.target.value as LanguagePreference);
+              updateDraft();
+            }}
+          >
+            <option value="system">{t('languageSystem')}</option>
+            <option value="en">{t('languageEnglish')}</option>
+            <option value="zh-CN">{t('languageChinese')}</option>
+          </select>
+        </section>
+
         <section className="settings-section" aria-labelledby="shortcuts-heading">
           <div className="settings-section__heading settings-section__heading--shortcuts">
             <div>
-              <h2 id="shortcuts-heading">Keyboard Shortcuts</h2>
-              <p>
-                Each command uses one physical key combination. Select Record and press the new
-                combination.
-              </p>
+              <h2 id="shortcuts-heading">{t('shortcutsHeading')}</h2>
+              <p>{t('shortcutsHelp')}</p>
             </div>
             <button type="button" className="quiet-button" onClick={resetAllShortcuts}>
-              Reset all
+              {t('resetAll')}
             </button>
           </div>
           <label className="field-label" htmlFor="shortcut-search">
-            Search commands
+            {t('searchLabel')}
           </label>
           <input
             id="shortcut-search"
             className="text-input"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search commands"
+            placeholder={t('searchPlaceholder')}
             autoComplete="off"
           />
           <div className="shortcut-list" onKeyDown={handleKeyDown}>
@@ -304,7 +342,9 @@ function SettingsApp(): React.JSX.Element {
                     <span>{command.description}</span>
                   </div>
                   <code className="shortcut-key">
-                    {isCapturing ? 'Press keys…' : formatShortcutBinding(binding, platform)}
+                    {isCapturing
+                      ? t('pressKeys')
+                      : formatShortcutBinding(binding, platform, t('commands:paletteOnly'))}
                   </code>
                   <button
                     type="button"
@@ -312,14 +352,14 @@ function SettingsApp(): React.JSX.Element {
                     onClick={() => startCapture(command.id)}
                     disabled={captureCommand !== null}
                   >
-                    {isCapturing ? 'Recording' : 'Record'}
+                    {isCapturing ? t('recording') : t('record')}
                   </button>
                   <button
                     type="button"
                     className="icon-button"
                     onClick={() => resetShortcut(command.id)}
-                    aria-label={`Reset ${command.label}`}
-                    title="Reset to default"
+                    aria-label={t('resetAria', { label: command.label })}
+                    title={t('resetTitle')}
                   >
                     ↺
                   </button>
@@ -342,11 +382,11 @@ function SettingsApp(): React.JSX.Element {
 
       <footer className="settings-footer">
         <div className="settings-footer__status" role="status">
-          {notice ?? (dirty ? 'Unsaved changes' : '')}
+          {notice ?? (dirty ? t('unsavedChanges') : '')}
         </div>
         <div className="settings-footer__actions">
           <button type="button" className="quiet-button" onClick={requestClose}>
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -354,7 +394,7 @@ function SettingsApp(): React.JSX.Element {
             onClick={() => void saveSettings()}
             disabled={!dirty || captureCommand !== null}
           >
-            Save
+            {t('save')}
           </button>
         </div>
       </footer>
@@ -367,14 +407,14 @@ function SettingsApp(): React.JSX.Element {
             aria-modal="true"
             aria-labelledby="discard-title"
           >
-            <h2 id="discard-title">Unsaved changes</h2>
-            <p>Save your changes before closing settings?</p>
+            <h2 id="discard-title">{t('discardTitle')}</h2>
+            <p>{t('discardPrompt')}</p>
             <div className="decision-dialog__actions">
               <button type="button" className="quiet-button" onClick={() => setClosePrompt(false)}>
-                Keep editing
+                {t('keepEditing')}
               </button>
               <button type="button" className="quiet-button" onClick={discardAndClose}>
-                Discard
+                {t('discard')}
               </button>
               <button
                 type="button"
@@ -384,7 +424,7 @@ function SettingsApp(): React.JSX.Element {
                   void saveSettings();
                 }}
               >
-                Save
+                {t('save')}
               </button>
             </div>
           </section>
@@ -401,6 +441,8 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <SettingsApp />
+    <I18nextProvider i18n={settingsI18n}>
+      <SettingsApp />
+    </I18nextProvider>
   </StrictMode>,
 );

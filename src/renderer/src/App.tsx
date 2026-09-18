@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   createCommandDefinitions,
   shortcutBindingMatchesInput,
@@ -16,17 +17,18 @@ function platformForRenderer(): SupportedPlatform {
 }
 
 export default function App(): React.JSX.Element {
+  const { t, i18n } = useTranslation(['shell', 'errors']);
   const platform = platformForRenderer();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [gpuOpen, setGpuOpen] = useState(false);
   const [gpuDiagnostics, setGpuDiagnostics] = useState<GpuDiagnostics | null>(null);
-  const [gpuError, setGpuError] = useState<string | null>(null);
+  const [gpuError, setGpuError] = useState(false);
   const [commands, setCommands] = useState<readonly CommandSummary[]>(() =>
     createCommandDefinitions(platform).map((definition) => ({
       id: definition.id,
-      label: definition.label,
-      description: definition.description,
+      label: i18n.t(`commands:${definition.id}.label`),
+      description: i18n.t(`commands:${definition.id}.description`),
       scope: definition.scope,
       activation: definition.activation,
       customizable: definition.customizable,
@@ -74,6 +76,17 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     const api = window.desktopAPI;
     if (api === undefined) return;
+    return api.locale.onChanged(() => {
+      void api.commands
+        .getSummaries()
+        .then((summaries) => setCommands(summaries))
+        .catch(() => undefined);
+    });
+  }, []);
+
+  useEffect(() => {
+    const api = window.desktopAPI;
+    if (api === undefined) return;
     void api.content
       .getState()
       .then((state) => setContentStatus(state))
@@ -81,7 +94,8 @@ export default function App(): React.JSX.Element {
         setContentStatus({
           type: 'error',
           code: -1,
-          description: 'The workspace state could not be read.',
+          description: t('errors:stateUnavailable'),
+          messageKey: 'errors:stateUnavailable',
         }),
       );
     return api.content.onStateChange(setContentStatus);
@@ -163,14 +177,14 @@ export default function App(): React.JSX.Element {
       setAboutOpen(false);
       setGpuOpen(true);
       setGpuDiagnostics(null);
-      setGpuError(null);
+      setGpuError(false);
       const getDiagnostics = window.desktopAPI?.diagnostics.getGpuDiagnostics;
       if (getDiagnostics === undefined) {
-        setGpuError('GPU diagnostics are unavailable.');
+        setGpuError(true);
       } else {
         void getDiagnostics()
           .then(setGpuDiagnostics)
-          .catch(() => setGpuError('GPU diagnostics are unavailable.'));
+          .catch(() => setGpuError(true));
       }
       return;
     }
@@ -219,7 +233,7 @@ export default function App(): React.JSX.Element {
     <div className="app-shell">
       <main
         className="content-host"
-        aria-label="Workspace content"
+        aria-label={t('workspaceAria')}
         data-content-status={contentStatus.type}
         ref={contentHostRef}
       >
@@ -231,19 +245,35 @@ export default function App(): React.JSX.Element {
         )}
         {contentStatus.type === 'idle' ? (
           <div className="empty-workspace" role="status">
-            <strong>No workspace configured</strong>
-            <span>Open Settings with the configured shortcut to add a workspace URL.</span>
+            <strong>{t('emptyTitle')}</strong>
+            <span>{t('emptyHint')}</span>
           </div>
         ) : null}
         {showLoading ? <LoadingOverlay /> : null}
         {showError && contentStatus.type === 'crashed' ? (
           <ErrorOverlay
-            title="Workspace stopped unexpectedly"
-            description="The workspace renderer stopped. Use the Reload Workspace shortcut to continue."
+            title={t('errors:crashedTitle')}
+            description={t('errors:crashedDescription')}
           />
         ) : null}
         {showError && contentStatus.type === 'error' ? (
-          <ErrorOverlay description={contentStatus.description} errorCode={contentStatus.code} />
+          <ErrorOverlay
+            description={
+              contentStatus.messageKey === undefined
+                ? contentStatus.description
+                : String(
+                    // The key comes from the main process at runtime, so it is
+                    // outside the typed resource surface.
+                    (
+                      i18n.t as unknown as (
+                        key: string,
+                        options?: Record<string, unknown>,
+                      ) => string
+                    )(contentStatus.messageKey, contentStatus.messageParams ?? {}),
+                  )
+            }
+            errorCode={contentStatus.code}
+          />
         ) : null}
       </main>
       <CommandPalette
@@ -261,8 +291,8 @@ export default function App(): React.JSX.Element {
             aria-labelledby="about-title"
           >
             <h2 id="about-title">moyu</h2>
-            <p>Focused desktop workspace shell.</p>
-            <span>Press Escape to close.</span>
+            <p>{t('aboutTagline')}</p>
+            <span>{t('pressEscapeToClose')}</span>
           </section>
         </div>
       ) : null}
@@ -274,11 +304,10 @@ export default function App(): React.JSX.Element {
             aria-modal="true"
             aria-labelledby="gpu-title"
           >
-            <h2 id="gpu-title">GPU diagnostics</h2>
-            {gpuDiagnostics === null && gpuError === null ? (
-              <p>Reading capability status…</p>
-            ) : null}
-            {gpuError === null && gpuDiagnostics !== null ? (
+            <h2 id="gpu-title">{t('gpuTitle')}</h2>
+            {gpuDiagnostics === null && !gpuError ? <p>{t('gpuReading')}</p> : null}
+            {gpuError ? <p role="alert">{t('errors:gpuUnavailable')}</p> : null}
+            {gpuError === false && gpuDiagnostics !== null ? (
               <dl className="gpu-dialog__details">
                 <div>
                   <dt>Electron</dt>
@@ -289,23 +318,22 @@ export default function App(): React.JSX.Element {
                   <dd>{gpuDiagnostics.chromiumVersion}</dd>
                 </div>
                 <div>
-                  <dt>Platform</dt>
+                  <dt>{t('gpuPlatform')}</dt>
                   <dd>
                     {gpuDiagnostics.platform} / {gpuDiagnostics.architecture}
                   </dd>
                 </div>
                 <div>
-                  <dt>Scale</dt>
-                  <dd>{gpuDiagnostics.scaleFactors.join(', ') || 'unknown'}</dd>
+                  <dt>{t('gpuScale')}</dt>
+                  <dd>{gpuDiagnostics.scaleFactors.join(', ') || t('unknown')}</dd>
                 </div>
                 <div>
-                  <dt>WebGL</dt>
-                  <dd>{gpuDiagnostics.featureStatus.webgl ?? 'unknown'}</dd>
+                  <dt>{t('gpuWebgl')}</dt>
+                  <dd>{gpuDiagnostics.featureStatus.webgl ?? t('unknown')}</dd>
                 </div>
               </dl>
             ) : null}
-            {gpuError !== null ? <p role="alert">{gpuError}</p> : null}
-            <span>Press Escape to close.</span>
+            <span>{t('pressEscapeToClose')}</span>
           </section>
         </div>
       ) : null}

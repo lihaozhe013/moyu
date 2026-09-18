@@ -2,6 +2,7 @@ import type { ContextMenuParams, MenuItemConstructorOptions, WebContents } from 
 import type { CommandRegistry } from '../commands/command-registry';
 import type { CommandId } from '../../shared/types';
 import { toElectronAccelerator, type SupportedPlatform } from '../../shared/commands';
+import { translate } from '../i18n';
 
 export interface ContextMenuOptions {
   readonly registry: CommandRegistry;
@@ -22,14 +23,14 @@ export function buildApplicationContextMenuTemplate(
   );
   const template: MenuItemConstructorOptions[] = [
     {
-      label: 'Settings…',
+      label: translate('menus:settings'),
       ...(settingsAccelerator === undefined ? {} : { accelerator: settingsAccelerator }),
       click: () => options.executeCommand('settings.open'),
     },
   ];
   if (!options.production && options.enableDevTools) {
     template.push({
-      label: 'Inspect Element',
+      label: translate('menus:inspectElement'),
       click: () => options.targetContents.inspectElement(options.params.x, options.params.y),
     });
   }

@@ -196,6 +196,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
           type: 'error',
           code: errorCode,
           description: safeDescription(errorDescription || 'The workspace request failed.'),
+          messageKey: 'errors:loadFailedDescription',
         },
         resourceGeneration,
       );
@@ -272,6 +273,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
           type: 'error',
           code: -1,
           description: 'The workspace request failed.',
+          messageKey: 'errors:loadFailedDescription',
         },
         target.generation,
       );

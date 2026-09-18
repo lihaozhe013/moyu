@@ -37,7 +37,8 @@ not affected by workspace dragging.
 session name. `createAppConfig` only uses `new URL()` to confirm that an
 initial URL is parseable.
 
-The preference store keeps the existing versioned workspace URL format.
+The preference store keeps the existing versioned workspace URL format and an
+optional language preference (`system`, `en`, or `zh-CN`).
 `withWorkspaceUrl` rebuilds the app configuration while preserving the current
 mode, DevTools preference, session persistence, and session name.
 
@@ -88,6 +89,19 @@ the local preload to use its Node/Electron runtime.
 
 ## Window drag controller
 
+## Internationalization
+
+Shared locale resources under `src/shared/i18n/locales/{en,zh-CN}` are bundled
+into every surface; nothing is loaded from disk at runtime. The main process
+resolves the effective language from the preference plus `app.getLocale()` and
+owns the active state. Command summaries, context-menu labels, and error
+texts reach the renderers as resolved strings or `messageKey` payloads, and
+`locale:get-state` plus a `locale:changed` push keep the shell translator in
+sync. The settings window changes the language through the normal save flow and
+re-renders with the returned snapshot.
+
+## Window drag controller
+
 `shortcuts.ts` listens for both `keyDown` and `keyUp` events in the main
 process. The shell and remote `WebContentsView` handlers share one held-binding
 state so a focus change between the two surfaces cannot leave duplicate or
@@ -123,7 +137,7 @@ src/
 │   └── window/          native windows, content view, layout, drag, and recovery
 ├── preload/              local shell and Settings bridges
 ├── renderer/             local shell and Settings UI
-└── shared/               types, commands, and zoom rules
+└── shared/               types, commands, zoom rules, and i18n resources
 ```
 
 There is no origin-policy or popup-policy module. Removing a policy module is

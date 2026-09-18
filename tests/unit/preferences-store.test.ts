@@ -65,4 +65,21 @@ describe('preferences store', () => {
       await rm(directory, { recursive: true, force: true });
     }
   });
+
+  it('persists and preserves the language preference', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'moyu-preferences-'));
+    try {
+      const store = createPreferencesStore(directory, fallbackWindow);
+      await store.load();
+      await store.update({ language: 'zh-CN' });
+      await store.update({ workspaceUrl: 'https://lang.example.test/' });
+      expect(store.get().language).toBe('zh-CN');
+      await store.flush();
+      await expect(readFile(join(directory, 'preferences.json'), 'utf8')).resolves.toContain(
+        'zh-CN',
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 });

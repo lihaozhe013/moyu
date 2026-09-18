@@ -6,11 +6,13 @@ import type {
   PersistedWindowState,
   ShortcutBinding,
 } from '../../shared/types';
+import type { LanguagePreference } from '../../shared/i18n/languages';
 import { sanitizeAppPreferences } from '../security/preferences-validation';
 import { validatePersistedWindowState } from '../security/ipc-validation';
 
 export interface PreferencesPatch {
   readonly workspaceUrl?: string | null;
+  readonly language?: LanguagePreference;
   readonly shortcuts?: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
   readonly window?: PersistedWindowState;
 }
@@ -82,6 +84,10 @@ export function createPreferencesStore(
     };
     if (workspaceUrl !== undefined) {
       candidate.workspaceUrl = workspaceUrl;
+    }
+    const language = patch.language ?? existing.language;
+    if (language !== undefined) {
+      candidate.language = language;
     }
 
     const sanitized = sanitizeAppPreferences(candidate, existing.window);

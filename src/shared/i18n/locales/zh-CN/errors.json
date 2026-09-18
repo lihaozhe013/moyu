@@ -1,0 +1,10 @@
+{
+  "loadFailedTitle": "无法加载工作区",
+  "loadFailedDescription": "工作区暂时不可用。请在连接恢复后重试。",
+  "reloadHint": "使用“重新加载工作区”快捷键重试。",
+  "errorCode": "错误代码：{{code}}",
+  "crashedTitle": "工作区意外停止",
+  "crashedDescription": "工作区渲染进程已停止。使用“重新加载工作区”快捷键继续。",
+  "stateUnavailable": "无法读取工作区状态。",
+  "gpuUnavailable": "GPU 诊断不可用。"
+}

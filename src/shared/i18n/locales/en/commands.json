@@ -1,0 +1,71 @@
+{
+  "settings.open": {
+    "label": "Open Settings",
+    "description": "Open or focus the application settings window."
+  },
+  "settings.save": {
+    "label": "Save Settings",
+    "description": "Save pending settings changes."
+  },
+  "palette.open": {
+    "label": "Open Command Palette",
+    "description": "Show the keyboard command palette."
+  },
+  "window.minimize": {
+    "label": "Minimize Window",
+    "description": "Minimize the primary workspace window."
+  },
+  "window.toggleMaximize": {
+    "label": "Maximize or Restore Window",
+    "description": "Toggle the primary workspace between maximized and windowed."
+  },
+  "window.close": {
+    "label": "Close Window",
+    "description": "Close the focused application window."
+  },
+  "app.quit": {
+    "label": "Quit Application",
+    "description": "Quit the desktop application."
+  },
+  "window.toggleFullscreen": {
+    "label": "Toggle Fullscreen",
+    "description": "Enter or leave native fullscreen presentation."
+  },
+  "content.reload": {
+    "label": "Reload Workspace",
+    "description": "Reload the remote workspace content."
+  },
+  "content.hardReload": {
+    "label": "Hard Reload Workspace",
+    "description": "Reload the remote workspace while ignoring cache."
+  },
+  "content.zoomReset": {
+    "label": "Reset Content Zoom",
+    "description": "Reset the workspace content zoom to 100 percent."
+  },
+  "content.zoomIn": {
+    "label": "Increase Content Zoom",
+    "description": "Increase the workspace content zoom."
+  },
+  "content.zoomOut": {
+    "label": "Decrease Content Zoom",
+    "description": "Decrease the workspace content zoom."
+  },
+  "shell.about": {
+    "label": "About moyu",
+    "description": "Show application information."
+  },
+  "shell.gpuDiagnostics": {
+    "label": "GPU Diagnostics",
+    "description": "Show non-sensitive GPU capability diagnostics."
+  },
+  "devtools.open": {
+    "label": "Open Content DevTools",
+    "description": "Open developer tools for the workspace content."
+  },
+  "window.drag": {
+    "label": "Hold to Drag Window",
+    "description": "Hold the shortcut and drag anywhere in the workspace."
+  },
+  "paletteOnly": "Palette only"
+}
