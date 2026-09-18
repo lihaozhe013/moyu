@@ -1,6 +1,14 @@
 import type { LogLevel } from './logger-types';
 
-export type LogCategory = 'app' | 'window' | 'content' | 'navigation' | 'security' | 'gpu' | 'ipc';
+export type LogCategory =
+  | 'app'
+  | 'window'
+  | 'settings-window'
+  | 'content'
+  | 'navigation'
+  | 'security'
+  | 'gpu'
+  | 'ipc';
 
 export interface LogContext {
   readonly [key: string]: unknown;

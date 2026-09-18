@@ -10,6 +10,10 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       rolldownOptions: {
+        input: {
+          index: resolve('src/preload/index.ts'),
+          settings: resolve('src/preload/settings.ts'),
+        },
         output: {
           format: 'cjs',
           entryFileNames: '[name].cjs',
@@ -24,5 +28,13 @@ export default defineConfig({
       },
     },
     plugins: [react()],
+    build: {
+      rolldownOptions: {
+        input: {
+          index: resolve('src/renderer/index.html'),
+          settings: resolve('src/renderer/settings/index.html'),
+        },
+      },
+    },
   },
 });

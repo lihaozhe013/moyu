@@ -1,25 +1,52 @@
-import { app, BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, Menu, screen } from 'electron';
 import { resolveRendererDevServerUrl } from './app/environment';
 import { acquireSingleInstanceLock, focusExistingWindow } from './app/single-instance';
 import { createLogger } from './app/logger';
-import type { CommandId, DisplayWorkArea, RestoredWindowState } from '../shared/types';
-import { resolveAppConfigFromEnvironment } from './security/config';
+import type {
+  AppConfig,
+  CommandId,
+  ContentStatus,
+  DisplayWorkArea,
+  RestoredWindowState,
+  SettingsSaveResult,
+  SettingsSnapshot,
+} from '../shared/types';
+import { IPC_CHANNELS } from '../shared/ipc';
+import { toElectronAccelerator } from '../shared/commands';
+import { resolveAppConfigFromEnvironment, withWorkspaceUrl } from './security/config';
+import { validateSettingsDraft } from './security/preferences-validation';
 import { createContentSession } from './security/session';
 import { createContentView, type ContentViewController } from './window/content-view';
-import { createMainWindow, loadLocalShell } from './window/create-main-window';
-import { emitContentState, emitContentZoom, registerIpcHandlers } from './ipc/handlers';
-import { installApplicationShortcuts } from './shortcuts/shortcuts';
+import { createMainWindow, installApplicationMenu, loadLocalShell } from './window/create-main-window';
+import {
+  createSettingsWindow,
+  type SettingsWindowController,
+} from './window/create-settings-window';
+import {
+  emitContentState,
+  emitContentZoom,
+  registerIpcHandlers,
+} from './ipc/handlers';
+import { registerSettingsIpcHandlers } from './ipc/settings-handlers';
+import { installApplicationShortcuts, installShortcutHandler } from './shortcuts/shortcuts';
 import { createWindowPresentationController } from './window/fullscreen';
 import { restoreWindowState } from './window/window-state';
 import { createPreferencesStore, type PreferencesStore } from './preferences/store';
-import { createCommandRegistry, type CommandRegistry } from './commands/command-registry';
+import {
+  createCommandRegistry,
+  validateCommandOverrides,
+  type CommandRegistry,
+} from './commands/command-registry';
 import { collectGpuDiagnostics } from './gpu/diagnostics';
 import { installShellContentSecurityPolicy } from './security/csp';
 
 let mainWindow: BrowserWindow | null = null;
 let contentView: ContentViewController | null = null;
+let settingsWindow: SettingsWindowController | null = null;
 let removeIpcHandlers: (() => void) | undefined;
+let removeSettingsIpcHandlers: (() => void) | undefined;
 let removeShortcuts: (() => void) | undefined;
+let removeSettingsShortcuts: (() => void) | undefined;
 let presentationController: ReturnType<typeof createWindowPresentationController> | undefined;
 let preferencesStore: PreferencesStore | undefined;
 let commandRegistry: CommandRegistry | undefined;
@@ -35,7 +62,7 @@ async function createApplicationWindow(): Promise<void> {
     return;
   }
 
-  const config = resolveAppConfigFromEnvironment();
+  const environmentConfig = resolveAppConfigFromEnvironment();
   const displays = screen.getAllDisplays().map((display): DisplayWorkArea => display.workArea);
   const primaryDisplay: DisplayWorkArea = screen.getPrimaryDisplay().workArea;
   const fallbackWindow: RestoredWindowState = {
@@ -47,10 +74,15 @@ async function createApplicationWindow(): Promise<void> {
   };
   preferencesStore = createPreferencesStore(app.getPath('userData'), fallbackWindow);
   const preferences = await preferencesStore.load();
-  commandRegistry = createCommandRegistry(
-    process.platform === 'darwin' ? 'darwin' : 'win32',
-    preferences.shortcuts,
-  );
+  let activeConfig = environmentConfig;
+  if (preferences.workspaceUrl !== undefined) {
+    try {
+      activeConfig = withWorkspaceUrl(environmentConfig, preferences.workspaceUrl);
+    } catch (error: unknown) {
+      logger.warn('Ignoring an invalid persisted workspace URL', { error });
+    }
+  }
+
   const restoredResult = restoreWindowState(
     preferences.window,
     displays,
@@ -59,84 +91,280 @@ async function createApplicationWindow(): Promise<void> {
   const restoredState: RestoredWindowState = restoredResult.success
     ? restoredResult.value
     : fallbackWindow;
+  const registry = createCommandRegistry(
+    process.platform === 'darwin' ? 'darwin' : 'win32',
+    preferences.shortcuts,
+  );
+  commandRegistry = registry;
+  const rendererDevServerUrl = resolveRendererDevServerUrl();
+  let settingsCapturing = false;
+  let lastWindowedBounds: Electron.Rectangle = restoredState;
+
   const executeCommand = (commandId: CommandId): void => {
     const currentWindow = getMainWindow();
-    if (currentWindow === null) {
-      return;
-    }
     switch (commandId) {
+      case 'settings.open':
+        openSettings();
+        return;
+      case 'settings.save':
+        settingsWindow?.window.webContents.send(IPC_CHANNELS.settingsSaveRequested);
+        return;
       case 'window.minimize':
-        currentWindow.minimize();
-        break;
+        currentWindow?.minimize();
+        return;
       case 'window.toggleMaximize':
         presentationController?.toggleMaximize();
-        break;
-      case 'window.close':
-        currentWindow.close();
-        break;
+        return;
+      case 'window.close': {
+        const focusedWindow = BrowserWindow.getFocusedWindow();
+        if (settingsWindow !== null && focusedWindow === settingsWindow.window) {
+          settingsWindow.window.webContents.send(IPC_CHANNELS.settingsCloseRequested);
+        } else {
+          currentWindow?.close();
+        }
+        return;
+      }
       case 'app.quit':
         app.quit();
-        break;
+        return;
       case 'window.toggleFullscreen':
         presentationController?.toggleFullscreen();
-        break;
+        return;
       case 'content.reload':
         void contentView?.reload().catch(() => undefined);
-        break;
+        return;
       case 'content.hardReload':
         void contentView?.hardReload().catch(() => undefined);
-        break;
+        return;
       case 'content.zoomReset':
+        contentView?.resetZoom();
         if (contentView !== null) {
-          contentView.resetZoom();
           emitContentZoom(getMainWindow(), contentView.getZoomFactor());
         }
-        break;
+        return;
       case 'content.zoomIn':
+        contentView?.zoomIn();
         if (contentView !== null) {
-          contentView.zoomIn();
           emitContentZoom(getMainWindow(), contentView.getZoomFactor());
         }
-        break;
+        return;
       case 'content.zoomOut':
+        contentView?.zoomOut();
         if (contentView !== null) {
-          contentView.zoomOut();
           emitContentZoom(getMainWindow(), contentView.getZoomFactor());
         }
-        break;
+        return;
+      case 'devtools.open':
+        if (
+          environmentConfig.mode === 'development' &&
+          environmentConfig.development.enableDevTools
+        ) {
+          contentView?.webContents.openDevTools({ mode: 'detach' });
+        }
+        return;
       case 'palette.open':
-        currentWindow.webContents.send('command-palette:open');
-        break;
-      case 'settings.open':
-      case 'settings.save':
       case 'shell.about':
       case 'shell.gpuDiagnostics':
-      case 'devtools.open':
-        break;
+        currentWindow?.webContents.send(IPC_CHANNELS.commandPaletteOpen);
+        return;
     }
   };
-  mainWindow = createMainWindow(restoredState, {
-    commandRegistry,
+
+  const showApplicationContextMenu = (
+    params: Electron.ContextMenuParams,
+    targetContents: Electron.WebContents,
+  ): void => {
+    const currentWindow = getMainWindow();
+    if (currentWindow === null || commandRegistry === undefined) {
+      return;
+    }
+    const settingsAccelerator = toElectronAccelerator(
+      commandRegistry.getBinding('settings.open'),
+      process.platform === 'darwin' ? 'darwin' : 'win32',
+    );
+    const template: Electron.MenuItemConstructorOptions[] = [
+      {
+        label: 'Settings…',
+        ...(settingsAccelerator === undefined ? {} : { accelerator: settingsAccelerator }),
+        click: () => executeCommand('settings.open'),
+      },
+    ];
+    if (
+      environmentConfig.mode === 'development' &&
+      environmentConfig.development.enableDevTools
+    ) {
+      template.push({
+        label: 'Inspect Element',
+        click: () => targetContents.inspectElement(params.x, params.y),
+      });
+    }
+    Menu.buildFromTemplate(template).popup({ window: currentWindow, x: params.x, y: params.y });
+  };
+
+  function installContentShortcuts(): void {
+    removeShortcuts?.();
+    const currentWindow = getMainWindow();
+    if (currentWindow === null || commandRegistry === undefined) {
+      removeShortcuts = undefined;
+      return;
+    }
+    removeShortcuts = installApplicationShortcuts(
+      currentWindow.webContents,
+      contentView?.webContents ?? null,
+      environmentConfig,
+      commandRegistry,
+      {
+        executeCommand,
+        dismissOverlays: () => currentWindow.webContents.send(IPC_CHANNELS.commandPaletteClose),
+      },
+    );
+  }
+
+  function createWorkspaceContent(config: AppConfig): ContentViewController {
+    const created = createContentView({
+      mainWindow: getMainWindow() as BrowserWindow,
+      contentSession,
+      config,
+      onStatusChange: (status: ContentStatus) => emitContentState(getMainWindow(), status),
+      onContextMenu: showApplicationContextMenu,
+    });
+    contentView = created;
+    installContentShortcuts();
+    return created;
+  }
+
+  function openSettings(): void {
+    if (settingsWindow !== null) {
+      settingsWindow.show();
+      return;
+    }
+    settingsWindow = createSettingsWindow(
+      rendererDevServerUrl === undefined ? {} : { rendererDevServerUrl },
+      () => {
+        removeSettingsShortcuts?.();
+        removeSettingsShortcuts = undefined;
+        settingsCapturing = false;
+        settingsWindow = null;
+      },
+    );
+    const currentWindow = getMainWindow();
+    if (currentWindow !== null && commandRegistry !== undefined) {
+      removeSettingsShortcuts = installShortcutHandler(
+        settingsWindow.window.webContents,
+        currentWindow.webContents,
+        commandRegistry,
+        environmentConfig,
+        'settings',
+        {
+          executeCommand,
+          dismissOverlays: () =>
+            settingsWindow?.window.webContents.send(IPC_CHANNELS.settingsDismissRequested),
+          isCapturing: () => settingsCapturing,
+        },
+      );
+    }
+    settingsWindow.show();
+  }
+
+  async function saveSettings(input: unknown): Promise<SettingsSaveResult> {
+    const draftValidation = validateSettingsDraft(input);
+    if (!draftValidation.success) {
+      return {
+        success: false,
+        fieldErrors: { form: draftValidation.error },
+        message: draftValidation.error,
+      };
+    }
+    const draft = draftValidation.value;
+    const commandValidation = validateCommandOverrides(registry.definitions, draft.shortcuts);
+    if (!commandValidation.valid) {
+      const message = commandValidation.errors.join(' ');
+      return { success: false, fieldErrors: { shortcuts: message }, message };
+    }
+
+    let nextConfig: AppConfig;
+    try {
+      nextConfig = withWorkspaceUrl(environmentConfig, draft.workspaceUrl);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Workspace URL is invalid.';
+      return { success: false, fieldErrors: { workspaceUrl: message }, message };
+    }
+
+    const previousUrl = activeConfig.content.initialUrl;
+    try {
+      await preferencesStore?.update({
+        workspaceUrl: draft.workspaceUrl,
+        shortcuts: commandValidation.overrides,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Settings could not be saved.';
+      return { success: false, fieldErrors: { form: message }, message };
+    }
+
+    registry.setOverrides(commandValidation.overrides);
+    activeConfig = nextConfig;
+    installApplicationMenu(registry, executeCommand);
+    let workspaceReloadStarted = false;
+    if (contentView === null) {
+      const created = createWorkspaceContent(nextConfig);
+      await created.load();
+      workspaceReloadStarted = true;
+    } else if (previousUrl !== draft.workspaceUrl) {
+      removeShortcuts?.();
+      await contentView.replaceWorkspaceUrl(draft.workspaceUrl);
+      installContentShortcuts();
+      workspaceReloadStarted = true;
+    }
+
+    return {
+      success: true,
+      snapshot: getSettingsSnapshot(),
+      workspaceReloadStarted,
+    };
+  }
+
+  function getSettingsSnapshot(): SettingsSnapshot {
+    return {
+      ...(activeConfig.content.initialUrl === undefined
+        ? {}
+        : { workspaceUrl: activeConfig.content.initialUrl }),
+      commands: registry
+        .getSummaries()
+        .filter(
+          (command) =>
+            !command.devOnly ||
+            (environmentConfig.mode === 'development' &&
+              environmentConfig.development.enableDevTools),
+        ),
+      shortcutOverrides: registry.getOverrides(),
+    };
+  }
+
+  const restoredWindow = createMainWindow(restoredState, {
+    commandRegistry: registry,
     executeCommand,
   });
-  let lastWindowedBounds = mainWindow.getBounds();
-  presentationController = createWindowPresentationController(mainWindow);
-  const contentSession = createContentSession(config);
-  const createdContentView = createContentView({
-    mainWindow,
-    contentSession,
-    config,
-    onStatusChange: (status) => emitContentState(getMainWindow(), status),
-  });
-  contentView = createdContentView;
+  mainWindow = restoredWindow;
+  let lastBounds = restoredWindow.getBounds();
+  lastWindowedBounds = lastBounds;
+  presentationController = createWindowPresentationController(restoredWindow);
+  const contentSession = createContentSession(activeConfig);
+  if (activeConfig.content.initialUrl !== undefined) {
+    createWorkspaceContent(activeConfig);
+  } else {
+    installContentShortcuts();
+  }
+
   removeIpcHandlers = registerIpcHandlers({
     getWindow: getMainWindow,
     getContentWebContents: () => contentView?.webContents ?? null,
     getContentState: () => contentView?.getState() ?? { type: 'idle' },
     getContentZoomFactor: () => contentView?.getZoomFactor() ?? 1,
     setContentZoomFactor: (factor) => {
-      createdContentView.setZoomFactor(factor);
-      emitContentZoom(getMainWindow(), createdContentView.getZoomFactor());
+      contentView?.setZoomFactor(factor);
+      if (contentView !== null) {
+        emitContentZoom(getMainWindow(), contentView.getZoomFactor());
+      }
     },
     getWindowPresentation: () =>
       presentationController?.getState() ?? {
@@ -160,24 +388,21 @@ async function createApplicationWindow(): Promise<void> {
     setContentBounds: (bounds) => contentView?.setBounds(bounds),
     getGpuDiagnostics: collectGpuDiagnostics,
   });
-  removeShortcuts = installApplicationShortcuts(
-    mainWindow.webContents,
-    createdContentView.webContents,
-    config,
-    commandRegistry,
-    {
-      executeCommand: (commandId) => {
-        if (commandId === 'devtools.open' && config.mode === 'development') {
-          createdContentView.webContents.openDevTools({ mode: 'detach' });
-          return;
-        }
-        executeCommand(commandId);
-      },
-      dismissOverlays: () => {
-        mainWindow?.webContents.send('command-palette:close');
-      },
+
+  removeSettingsIpcHandlers = registerSettingsIpcHandlers({
+    getWindow: () => settingsWindow?.window ?? null,
+    getSnapshot: getSettingsSnapshot,
+    saveSettings,
+    setCaptureMode: (active) => {
+      settingsCapturing = active;
     },
-  );
+  });
+
+  restoredWindow.webContents.on('context-menu', (event, params) => {
+    event.preventDefault();
+    showApplicationContextMenu(params, restoredWindow.webContents);
+  });
+
   const persistWindowState = (updateWindowedBounds: boolean): void => {
     const currentWindow = getMainWindow();
     if (currentWindow === null || preferencesStore === undefined) {
@@ -196,7 +421,8 @@ async function createApplicationWindow(): Promise<void> {
       presentation?.presentation === 'windowed' &&
       !currentWindow.isMaximized()
     ) {
-      lastWindowedBounds = currentWindow.getBounds();
+      lastBounds = currentWindow.getBounds();
+      lastWindowedBounds = lastBounds;
     }
     void preferencesStore
       .update({ window: { ...lastWindowedBounds, maximized } })
@@ -205,39 +431,48 @@ async function createApplicationWindow(): Promise<void> {
   const schedulePersistWindowState = (updateWindowedBounds: boolean): void => {
     setImmediate(() => persistWindowState(updateWindowedBounds));
   };
-  mainWindow.on('resize', () => schedulePersistWindowState(true));
-  mainWindow.on('move', () => schedulePersistWindowState(true));
-  mainWindow.on('maximize', () => persistWindowState(false));
-  mainWindow.on('unmaximize', () => persistWindowState(false));
-  mainWindow.on('close', () => persistWindowState(true));
-  mainWindow.on('closed', () => {
+  restoredWindow.on('resize', () => schedulePersistWindowState(true));
+  restoredWindow.on('move', () => schedulePersistWindowState(true));
+  restoredWindow.on('maximize', () => persistWindowState(false));
+  restoredWindow.on('unmaximize', () => persistWindowState(false));
+  restoredWindow.on('close', () => persistWindowState(true));
+  restoredWindow.on('closed', () => {
     persistWindowState(false);
+    settingsWindow?.dispose();
+    settingsWindow = null;
     removeShortcuts?.();
     removeShortcuts = undefined;
+    removeSettingsShortcuts?.();
+    removeSettingsShortcuts = undefined;
     presentationController?.dispose();
     presentationController = undefined;
     contentView?.dispose();
     contentView = null;
     removeIpcHandlers?.();
     removeIpcHandlers = undefined;
+    removeSettingsIpcHandlers?.();
+    removeSettingsIpcHandlers = undefined;
     void preferencesStore?.flush();
     preferencesStore = undefined;
     commandRegistry = undefined;
     mainWindow = null;
   });
 
-  const rendererDevServerUrl = resolveRendererDevServerUrl();
   const removeShellCsp = installShellContentSecurityPolicy(
-    mainWindow.webContents.session,
-    config.mode,
+    restoredWindow.webContents.session,
+    environmentConfig.mode,
     rendererDevServerUrl,
   );
-  mainWindow.once('closed', removeShellCsp);
+  restoredWindow.once('closed', removeShellCsp);
   await loadLocalShell(
-    mainWindow,
+    restoredWindow,
     rendererDevServerUrl === undefined ? {} : { rendererDevServerUrl },
   );
-  await createdContentView.load();
+  if (contentView !== null) {
+    await contentView.load();
+  } else {
+    openSettings();
+  }
 }
 
 async function startApplication(): Promise<void> {

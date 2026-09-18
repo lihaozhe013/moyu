@@ -15,7 +15,9 @@ const productionConfig = createAppConfig({
 
 describe('navigation policy', () => {
   it('allows the initial URL, same application origin, and authentication origin', () => {
-    expect(evaluateNavigation(productionConfig.content.initialUrl, productionConfig)).toEqual({
+    expect(
+      evaluateNavigation(productionConfig.content.initialUrl ?? '', productionConfig),
+    ).toEqual({
       action: 'allow',
       reason: 'allowed-initial-url',
     });

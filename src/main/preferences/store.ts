@@ -90,7 +90,7 @@ export function createPreferencesStore(
     }
     current = sanitized.preferences;
     const snapshot = current;
-    pendingWrite = pendingWrite.then(async () => {
+    pendingWrite = pendingWrite.catch(() => undefined).then(async () => {
       await mkdir(dirname(preferencesPath), { recursive: true });
       const temporaryPath = `${preferencesPath}.tmp`;
       await writeFile(temporaryPath, JSON.stringify(snapshot), 'utf8');

@@ -22,6 +22,13 @@ export const IPC_CHANNELS = {
   layoutSetContentBounds: 'layout:set-content-bounds',
   commandPaletteOpen: 'command-palette:open',
   commandPaletteClose: 'command-palette:close',
+  settingsGetSnapshot: 'settings:get-snapshot',
+  settingsSave: 'settings:save',
+  settingsSetCaptureMode: 'settings:set-capture-mode',
+  settingsClose: 'settings:close',
+  settingsSaveRequested: 'settings:save-requested',
+  settingsCloseRequested: 'settings:close-requested',
+  settingsDismissRequested: 'settings:dismiss-requested',
   diagnosticsGetGpu: 'diagnostics:get-gpu',
 } as const;
 
@@ -62,5 +69,19 @@ export interface DesktopAPI {
   };
   readonly diagnostics: {
     readonly getGpuDiagnostics: () => Promise<GpuDiagnostics>;
+  };
+}
+
+export interface SettingsAPI {
+  readonly settings: {
+    readonly getSnapshot: () => Promise<import('./types').SettingsSnapshot>;
+    readonly save: (
+      draft: import('./types').SettingsDraft,
+    ) => Promise<import('./types').SettingsSaveResult>;
+    readonly setCaptureMode: (active: boolean) => Promise<void>;
+    readonly close: () => Promise<void>;
+    readonly onSaveRequest: (listener: () => void) => () => void;
+    readonly onCloseRequest: (listener: () => void) => () => void;
+    readonly onDismissRequest: (listener: () => void) => () => void;
   };
 }

@@ -75,9 +75,19 @@ describe('application configuration', () => {
     expect(validateAppConfigInput({ ...baseInput, allowedOrigins: [] })).toMatchObject({
       success: true,
     });
-    expect(() => createAppConfig({ ...baseInput, allowedOrigins: [] })).toThrow(
-      'allowedOrigins must contain at least one origin',
-    );
+    const emptyContent = createAppConfig({
+      mode: 'development',
+      allowedOrigins: [],
+      enableDevTools: true,
+    }).content;
+    expect(emptyContent.initialUrl).toBeUndefined();
+    expect(emptyContent.allowedOrigins).toEqual([]);
+    expect(() =>
+      createAppConfig({
+        ...baseInput,
+        allowedOrigins: ['https://workspace.example.test', 'https://other.example.test'],
+      }),
+    ).toThrow('only the initial content origin');
   });
 
   it('resolves environment values once with explicit boolean parsing', () => {
@@ -95,9 +105,9 @@ describe('application configuration', () => {
       development: { enableDevTools: false, allowArbitraryNavigation: false },
       session: { persist: true, partition: 'persist:fixture-session' },
     });
-    expect(() => resolveAppConfigFromEnvironment({ NODE_ENV: 'production' })).toThrow(
-      'APP_CONTENT_URL is required',
-    );
+    const productionWithoutWorkspace = resolveAppConfigFromEnvironment({ NODE_ENV: 'production' });
+    expect(productionWithoutWorkspace.content.initialUrl).toBeUndefined();
+    expect(productionWithoutWorkspace.content.allowedOrigins).toEqual([]);
     expect(() =>
       resolveAppConfigFromEnvironment({ NODE_ENV: 'test', APP_ENABLE_DEVTOOLS: 'maybe' }),
     ).toThrow('APP_ENABLE_DEVTOOLS must be true or false');

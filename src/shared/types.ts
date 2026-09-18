@@ -1,3 +1,5 @@
+import type { CommandSummary } from './commands';
+
 export type AppMode = 'development' | 'production' | 'test';
 
 export type WindowPresentation = 'windowed' | 'maximized' | 'fullscreen';
@@ -50,7 +52,7 @@ export interface NativeContentBounds {
 }
 
 export interface ContentConfig {
-  readonly initialUrl: string;
+  readonly initialUrl?: string;
   readonly allowedOrigins: readonly string[];
   readonly authenticationOrigins: readonly string[];
 }
@@ -86,6 +88,29 @@ export interface AppPreferencesV1 {
   readonly shortcuts: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
   readonly window: PersistedWindowState;
 }
+
+export interface SettingsSnapshot {
+  readonly workspaceUrl?: string;
+  readonly commands: readonly CommandSummary[];
+  readonly shortcutOverrides: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
+}
+
+export interface SettingsDraft {
+  readonly workspaceUrl: string;
+  readonly shortcuts: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
+}
+
+export type SettingsSaveResult =
+  | {
+      readonly success: true;
+      readonly snapshot: SettingsSnapshot;
+      readonly workspaceReloadStarted: boolean;
+    }
+  | {
+      readonly success: false;
+      readonly fieldErrors: Readonly<Record<string, string>>;
+      readonly message: string;
+    };
 
 export interface RestoredWindowState {
   readonly width: number;

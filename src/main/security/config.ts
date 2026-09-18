@@ -10,7 +10,7 @@ import { normalizeOrigin } from '../navigation/allowed-origins';
 
 export interface AppConfigInput {
   readonly mode: AppMode;
-  readonly initialUrl: string;
+  readonly initialUrl?: string;
   readonly allowedOrigins: readonly string[];
   readonly authenticationOrigins?: readonly string[];
   readonly enableDevTools?: boolean;
@@ -30,7 +30,10 @@ function isAppMode(value: unknown): value is AppMode {
   return value === 'development' || value === 'production' || value === 'test';
 }
 
-function parseInitialUrl(value: string, mode: AppMode): URL {
+function parseInitialUrl(value: string | undefined, mode: AppMode): URL | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
   let parsed: URL;
   try {
     parsed = new URL(value);
@@ -50,10 +53,6 @@ function parseInitialUrl(value: string, mode: AppMode): URL {
 }
 
 function parseOrigins(values: readonly string[], fieldName: string): readonly string[] {
-  if (values.length === 0) {
-    throw new ConfigurationError(`${fieldName} must contain at least one origin.`);
-  }
-
   const normalized = values.map((value) => {
     try {
       return normalizeOrigin(value);
@@ -87,7 +86,10 @@ export function validateAppConfigInput(input: unknown): ValidationResult<AppConf
   if (!isAppMode(candidate.mode)) {
     return { success: false, error: 'Configuration mode is invalid.' };
   }
-  if (typeof candidate.initialUrl !== 'string' || candidate.initialUrl.length === 0) {
+  if (
+    candidate.initialUrl !== undefined &&
+    (typeof candidate.initialUrl !== 'string' || candidate.initialUrl.length === 0)
+  ) {
     return { success: false, error: 'Configuration initialUrl must be a non-empty string.' };
   }
   if (
@@ -129,7 +131,7 @@ export function validateAppConfigInput(input: unknown): ValidationResult<AppConf
     success: true,
     value: {
       mode: candidate.mode,
-      initialUrl: candidate.initialUrl,
+      ...(candidate.initialUrl === undefined ? {} : { initialUrl: candidate.initialUrl }),
       allowedOrigins: candidate.allowedOrigins as string[],
       ...(authenticationOrigins === undefined
         ? {}
@@ -180,8 +182,17 @@ export function createAppConfig(input: AppConfigInput): AppConfig {
     throw new ConfigurationError('Production origins must use HTTPS.');
   }
 
-  if (!normalizedAllowedOrigins.includes(parsedInitialUrl.origin)) {
-    throw new ConfigurationError('The initial content URL origin must be allowlisted.');
+  if (parsedInitialUrl === undefined) {
+    if (normalizedAllowedOrigins.length > 0) {
+      throw new ConfigurationError('Allowed origins require an initial content URL.');
+    }
+  } else {
+    if (!normalizedAllowedOrigins.includes(parsedInitialUrl.origin)) {
+      throw new ConfigurationError('The initial content URL origin must be allowlisted.');
+    }
+    if (normalizedAllowedOrigins.some((origin) => origin !== parsedInitialUrl.origin)) {
+      throw new ConfigurationError('Allowed origins may contain only the initial content origin.');
+    }
   }
 
   const development: DevelopmentConfig = {
@@ -197,8 +208,8 @@ export function createAppConfig(input: AppConfigInput): AppConfig {
   }
 
   const content: ContentConfig = {
-    initialUrl: parsedInitialUrl.toString(),
-    allowedOrigins: normalizedAllowedOrigins,
+    ...(parsedInitialUrl === undefined ? {} : { initialUrl: parsedInitialUrl.toString() }),
+    allowedOrigins: parsedInitialUrl === undefined ? [] : [parsedInitialUrl.origin],
     authenticationOrigins: normalizedAuthenticationOrigins,
   };
 
@@ -214,7 +225,20 @@ export function createAppConfig(input: AppConfigInput): AppConfig {
   };
 }
 
-const DEVELOPMENT_DEFAULT_URL = 'https://example.com/';
+export function withWorkspaceUrl(config: AppConfig, workspaceUrl: string): AppConfig {
+  const origin = new URL(workspaceUrl).origin;
+  return createAppConfig({
+    mode: config.mode,
+    initialUrl: workspaceUrl,
+    allowedOrigins: [origin],
+    authenticationOrigins: config.content.authenticationOrigins,
+    enableDevTools: config.development.enableDevTools,
+    allowArbitraryNavigation: config.development.allowArbitraryNavigation,
+    persistSession: config.session.persist,
+    sessionName: config.session.partition.replace(/^persist:/, ''),
+  });
+}
+
 const TEST_DEFAULT_URL = 'http://127.0.0.1:4311/';
 
 function readList(
@@ -251,23 +275,27 @@ export function resolveAppConfigFromEnvironment(
 ): AppConfig {
   const mode = resolveRuntimeMode(environment);
   const configuredUrl = environment.APP_CONTENT_URL;
-  if (mode === 'production' && (configuredUrl === undefined || configuredUrl.length === 0)) {
-    throw new ConfigurationError('APP_CONTENT_URL is required in production.');
-  }
-
   const initialUrl =
-    configuredUrl ?? (mode === 'test' ? TEST_DEFAULT_URL : DEVELOPMENT_DEFAULT_URL);
+    configuredUrl !== undefined && configuredUrl.length > 0
+      ? configuredUrl
+      : mode === 'test'
+        ? TEST_DEFAULT_URL
+        : undefined;
   let initialOrigin: string;
-  try {
-    initialOrigin = new URL(initialUrl).origin;
-  } catch {
-    throw new ConfigurationError('APP_CONTENT_URL must be a valid URL.');
+  if (initialUrl === undefined) {
+    initialOrigin = '';
+  } else {
+    try {
+      initialOrigin = new URL(initialUrl).origin;
+    } catch {
+      throw new ConfigurationError('APP_CONTENT_URL must be a valid URL.');
+    }
   }
 
   return createAppConfig({
     mode,
-    initialUrl,
-    allowedOrigins: readList(environment, 'APP_ALLOWED_ORIGINS', [initialOrigin]),
+    ...(initialUrl === undefined ? {} : { initialUrl }),
+    allowedOrigins: initialOrigin.length === 0 ? [] : [initialOrigin],
     authenticationOrigins: readList(environment, 'APP_AUTHENTICATION_ORIGINS', []),
     enableDevTools: readBoolean(environment, 'APP_ENABLE_DEVTOOLS', mode !== 'production'),
     allowArbitraryNavigation: readBoolean(environment, 'APP_ALLOW_ARBITRARY_NAVIGATION', false),

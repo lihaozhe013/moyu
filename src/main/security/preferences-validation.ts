@@ -4,6 +4,7 @@ import type {
   PersistedWindowState,
   ShortcutBinding,
   ShortcutModifier,
+  SettingsDraft,
   ValidationResult,
 } from '../../shared/types';
 import { isCommandId, shortcutBindingKey } from '../../shared/commands';
@@ -76,6 +77,33 @@ export function normalizeWorkspaceUrl(value: unknown): ValidationResult<string> 
 export interface SanitizedPreferences {
   readonly preferences: AppPreferencesV1;
   readonly issues: readonly string[];
+}
+
+export function validateSettingsDraft(input: unknown): ValidationResult<SettingsDraft> {
+  if (!isRecord(input) || Object.keys(input).some((key) => key !== 'workspaceUrl' && key !== 'shortcuts')) {
+    return { success: false, error: 'Settings draft contains an unknown field.' };
+  }
+  const workspaceUrl = normalizeWorkspaceUrl(input.workspaceUrl);
+  if (!workspaceUrl.success) {
+    return workspaceUrl;
+  }
+  if (!isRecord(input.shortcuts)) {
+    return { success: false, error: 'Settings shortcuts must be an object.' };
+  }
+
+  const shortcuts: Partial<Record<CommandId, ShortcutBinding>> = {};
+  for (const [commandId, value] of Object.entries(input.shortcuts)) {
+    if (!isCommandId(commandId)) {
+      return { success: false, error: `Unknown shortcut command: ${commandId}.` };
+    }
+    const binding = validateShortcutBinding(value);
+    if (!binding.success) {
+      return { success: false, error: `${commandId}: ${binding.error}` };
+    }
+    shortcuts[commandId] = binding.value;
+  }
+
+  return { success: true, value: { workspaceUrl: workspaceUrl.value, shortcuts } };
 }
 
 function fallbackPreferences(window: PersistedWindowState): AppPreferencesV1 {

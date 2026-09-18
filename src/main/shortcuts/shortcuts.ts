@@ -7,6 +7,7 @@ import type { CommandRegistry, CommandSurface } from '../commands/command-regist
 export interface ShortcutActions {
   readonly executeCommand: (commandId: CommandId) => void;
   readonly dismissOverlays: () => void;
+  readonly isCapturing?: () => boolean;
 }
 
 interface BeforeInputEvent {
@@ -55,7 +56,7 @@ function toShortcutInput(input: BeforeInputEvent): ShortcutInput {
   };
 }
 
-function installOnContents(
+export function installShortcutHandler(
   contents: WebContents,
   paletteContents: WebContents,
   registry: CommandRegistry,
@@ -69,8 +70,15 @@ function installOnContents(
     }
 
     if (input.key === 'Escape') {
+      if (surface === 'settings' && actions.isCapturing?.() === true) {
+        return;
+      }
       event.preventDefault();
       actions.dismissOverlays();
+      return;
+    }
+
+    if (surface === 'settings' && actions.isCapturing?.() === true) {
       return;
     }
 
@@ -97,12 +105,12 @@ function installOnContents(
 
 export function installApplicationShortcuts(
   shellContents: WebContents,
-  contentContents: WebContents,
+  contentContents: WebContents | null,
   config: AppConfig,
   registry: CommandRegistry,
   actions: ShortcutActions,
 ): () => void {
-  const removeShellHandler = installOnContents(
+  const removeShellHandler = installShortcutHandler(
     shellContents,
     shellContents,
     registry,
@@ -110,14 +118,10 @@ export function installApplicationShortcuts(
     'workspace',
     actions,
   );
-  const removeContentHandler = installOnContents(
-    contentContents,
-    shellContents,
-    registry,
-    config,
-    'workspace',
-    actions,
-  );
+  const removeContentHandler =
+    contentContents === null
+      ? () => undefined
+      : installShortcutHandler(contentContents, shellContents, registry, config, 'workspace', actions);
   return () => {
     removeShellHandler();
     removeContentHandler();

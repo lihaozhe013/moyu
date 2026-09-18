@@ -6,6 +6,7 @@ export type NavigationDecisionReason =
   | 'allowed-application-origin'
   | 'allowed-authentication-origin'
   | 'allowed-development-navigation'
+  | 'denied-no-workspace'
   | 'denied-malformed-url'
   | 'denied-credentials'
   | 'denied-protocol'
@@ -29,7 +30,11 @@ function parseTarget(target: string | URL): ValidationResult<URL> {
   }
 }
 
-export function evaluateNavigation(target: string | URL, config: AppConfig): NavigationDecision {
+export function evaluateNavigation(
+  target: string | URL,
+  config: AppConfig,
+  activeWorkspaceUrl = config.content.initialUrl,
+): NavigationDecision {
   const parsed = parseTarget(target);
   if (!parsed.success) {
     return { action: 'deny', reason: 'denied-malformed-url' };
@@ -44,9 +49,16 @@ export function evaluateNavigation(target: string | URL, config: AppConfig): Nav
     return { action: 'deny', reason: 'denied-protocol' };
   }
 
-  const initialUrl = new URL(config.content.initialUrl);
-  if (url.href === initialUrl.href) {
-    return { action: 'allow', reason: 'allowed-initial-url' };
+  if (activeWorkspaceUrl !== undefined) {
+    const workspaceUrl = new URL(activeWorkspaceUrl);
+    if (url.href === workspaceUrl.href) {
+      return { action: 'allow', reason: 'allowed-initial-url' };
+    }
+    if (url.origin === workspaceUrl.origin) {
+      return { action: 'allow', reason: 'allowed-application-origin' };
+    }
+  } else {
+    return { action: 'deny', reason: 'denied-no-workspace' };
   }
 
   if (originIsAllowed(url, config.content.allowedOrigins)) {
