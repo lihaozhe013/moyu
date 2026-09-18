@@ -1,36 +1,17 @@
-import type { Session, WebContents } from 'electron';
-import type { Logger } from '../app/logger';
+import type { Session } from 'electron';
 
-export function installPermissionPolicy(
-  contentSession: Session,
-  contentWebContents: WebContents,
-  logger: Logger,
-): () => void {
+export function installPermissionPolicy(contentSession: Session): () => void {
   const requestHandler = (
-    requestingWebContents: WebContents,
-    permission: Parameters<NonNullable<Parameters<Session['setPermissionRequestHandler']>[0]>>[1],
+    _requestingWebContents: Parameters<
+      NonNullable<Parameters<Session['setPermissionRequestHandler']>[0]>
+    >[0],
+    _permission: Parameters<NonNullable<Parameters<Session['setPermissionRequestHandler']>[0]>>[1],
     callback: (permissionGranted: boolean) => void,
   ): void => {
-    const isContentRequest = requestingWebContents === contentWebContents;
-    logger.info('Denied content permission request', {
-      permission,
-      contentRequest: isContentRequest,
-    });
-    callback(false);
+    callback(true);
   };
 
-  const checkHandler = (
-    requestingWebContents: WebContents | null,
-    permission: Parameters<NonNullable<Parameters<Session['setPermissionCheckHandler']>[0]>>[1],
-    requestingOrigin: string,
-  ): boolean => {
-    logger.debug('Denied content permission check', {
-      permission,
-      requestingOrigin: requestingOrigin || '[empty-origin]',
-      contentRequest: requestingWebContents === contentWebContents,
-    });
-    return false;
-  };
+  const checkHandler = (): boolean => true;
 
   contentSession.setPermissionRequestHandler(requestHandler);
   contentSession.setPermissionCheckHandler(checkHandler);

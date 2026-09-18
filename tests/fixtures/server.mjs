@@ -67,9 +67,12 @@ const server = http.createServer((request, response) => {
       response.writeHead(302, { location: `${origin}/` });
       response.end();
       return;
-    case '/redirect-denied':
-      response.writeHead(302, { location: `http://127.0.0.1:${port + 1}/denied` });
+    case '/redirect-cross-origin':
+      response.writeHead(302, { location: `http://localhost:${port}/cross-origin-target` });
       response.end();
+      return;
+    case '/cross-origin-target':
+      sendHtml(response, page('Cross Origin Target', '<h1 data-cross-origin="true">Loaded</h1>'));
       return;
     case '/popup':
       sendHtml(
@@ -144,6 +147,7 @@ const server = http.createServer((request, response) => {
           'Permission Fixture',
           '<button id="request-permission" type="button">Request permission</button><p id="result"></p>',
           `document.querySelector('#request-permission').addEventListener('click', () => {
+            document.querySelector('#result').textContent = 'requested';
             navigator.geolocation.getCurrentPosition(
               () => { document.querySelector('#result').textContent = 'granted'; },
               () => { document.querySelector('#result').textContent = 'denied'; },

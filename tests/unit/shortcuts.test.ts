@@ -43,10 +43,8 @@ const config: AppConfig = {
   mode: 'development',
   content: {
     initialUrl: 'https://workspace.example.test/',
-    allowedOrigins: ['https://workspace.example.test'],
-    authenticationOrigins: [],
   },
-  development: { enableDevTools: true, allowArbitraryNavigation: true },
+  development: { enableDevTools: true },
   session: { persist: false, partition: 'workspace' },
 };
 
@@ -104,7 +102,7 @@ describe('application shortcuts', () => {
       {
         ...config,
         mode: 'production',
-        development: { enableDevTools: false, allowArbitraryNavigation: false },
+        development: { enableDevTools: false },
       },
       createCommandRegistry('win32'),
       {

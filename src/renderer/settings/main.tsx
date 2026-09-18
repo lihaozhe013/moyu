@@ -240,8 +240,8 @@ function SettingsApp(): React.JSX.Element {
             <div>
               <h2 id="workspace-heading">Workspace URL</h2>
               <p>
-                Use an HTTPS workspace in production. Local HTTP URLs are available in development
-                and tests.
+                Enter any URL that Electron can load, including local HTTP pages, LAN pages, and
+                pages with their own authentication or permissions.
               </p>
             </div>
           </div>

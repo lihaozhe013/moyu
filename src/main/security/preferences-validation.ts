@@ -65,15 +65,6 @@ export function normalizeWorkspaceUrl(value: unknown): ValidationResult<string> 
   } catch {
     return { success: false, error: 'Workspace URL must be a valid URL.' };
   }
-  if (
-    (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
-    parsed.hostname.length === 0
-  ) {
-    return { success: false, error: 'Workspace URL must use HTTP(S) and include a host.' };
-  }
-  if (parsed.username || parsed.password) {
-    return { success: false, error: 'Workspace URL must not contain credentials.' };
-  }
   return { success: true, value: parsed.toString() };
 }
 

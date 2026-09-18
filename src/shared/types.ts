@@ -53,13 +53,10 @@ export interface NativeContentBounds {
 
 export interface ContentConfig {
   readonly initialUrl?: string;
-  readonly allowedOrigins: readonly string[];
-  readonly authenticationOrigins: readonly string[];
 }
 
 export interface DevelopmentConfig {
   readonly enableDevTools: boolean;
-  readonly allowArbitraryNavigation: boolean;
 }
 
 export interface SessionConfig {

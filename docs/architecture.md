@@ -1,142 +1,107 @@
 # Architecture
 
-[`../SPEC.md`](../SPEC.md) is normative. This document describes the current
-runtime boundaries and the implementation seams agents should preserve.
+The application is a small local shell around one intentionally unrestricted
+Electron web runtime. The architecture keeps shell ownership clear without
+pretending that the remote page is a security boundary.
 
-## Trust domains
+## Runtime surfaces
 
-```text
-Electron main process
-├── local workspace BrowserWindow renderer
-├── local settings BrowserWindow renderer
-└── one isolated remote WebContentsView
-```
+There are four cooperating surfaces:
 
-The main process owns lifecycle, windows, content generations, command
-registry, shortcut dispatch, menus, navigation, session policy, persistence,
-IPC validation, diagnostics, and crash handling.
+1. The Electron main process owns lifecycle, native windows, the content
+   session, commands, persistence, and layout updates.
+2. The local workspace renderer owns the shell, empty state, loading/error
+   overlays, command palette, and visual layout.
+3. The local Settings renderer owns URL and shortcut editing.
+4. The remote `WebContentsView` renders the configured self-authored page.
 
-The workspace renderer owns the 12 px drag strip, content-host measurement,
-local overlays, command palette, and visual state. The settings renderer is a
-separate local entry point with its own minimal preload and owns only the URL
-and shortcut editor. Neither local renderer receives Node.js or generic IPC.
-
-The remote view is created with no preload and with Node integration disabled,
-context isolation, sandbox, web security, and insecure-content blocking. It
-cannot access local APIs, settings storage, command registration, or native
-bounds.
+The local renderers use their existing preload APIs. The remote view has no
+remote preload and intentionally runs with Node/Electron renderer access.
 
 ## Window composition
 
-```text
-Main BrowserWindow (frame: false)
-┌──────────────────────────────────────────────────────────┐
-│ 12 px drag strip                                         │
-├──────────────────────────────────────────────────────────┤
-│ one native WebContentsView / transient local overlay     │
-└──────────────────────────────────────────────────────────┘
+The main `BrowserWindow` is frameless. Its local renderer reports the
+`.content-host` rectangle through the existing IPC channel. The main process
+adds one `WebContentsView` as a child of the window and applies the same
+rectangle to the native view.
 
-Settings BrowserWindow (frame: false)
-┌──────────────────────────────────────────────────────────┐
-│ 12 px drag strip                                         │
-├── URL editor                                              │
-├── searchable shortcut editor                              │
-└── keyboard-operable footer and decisions                  │
+Settings is a separate modeless local window and stays open after a successful
+workspace save.
+
+## Startup and preferences
+
+`resolveAppConfigFromEnvironment` reads the runtime mode, optional
+`APP_CONTENT_URL`, development-tools preference, session persistence, and
+session name. `createAppConfig` only uses `new URL()` to confirm that an
+initial URL is parseable.
+
+The preference store keeps the existing versioned workspace URL format.
+`withWorkspaceUrl` rebuilds the app configuration while preserving the current
+mode, DevTools preference, session persistence, and session name.
+
+## Content session
+
+`createContentSession` creates the configured Electron partition and installs a
+certificate verification callback that accepts certificates. The session
+permission handlers return `true` for checks and requests. No download handler
+is installed, so Electron's default download path remains active.
+
+The content session is shared with popup windows. `content-view.ts` uses the
+same WebPreferences for the workspace and the `overrideBrowserWindowOptions`
+returned by `setWindowOpenHandler`.
+
+## Content lifecycle
+
+`content-view.ts` creates one `WebContentsView` generation at a time. URL
+replacement disposes the previous generation, creates a fresh view, and loads
+the new target. Navigation listeners only track the active URL for loading
+status; they do not reject navigation or redirects.
+
+Electron load failures, renderer crashes, and unresponsive notifications still
+drive the existing shell status and recovery UI. These are lifecycle states,
+not content security decisions.
+
+## Bounds and first-run behavior
+
+The renderer can send bounds before a remote view exists. `index.ts` stores the
+latest `ContentBounds` independently of `contentView`. `createWorkspaceContent`
+applies the cached bounds immediately after creating the first view, before its
+initial load. Later bounds messages apply directly to the current view.
+
+This preserves the invariant:
+
+```text
+shell .content-host rectangle == native WebContentsView rectangle
 ```
 
-No persistent title bar, toolbar, tool rail, inspector, status bar, or custom
-window controls are part of the current shell.
+It covers first-run URL entry, resize, reload, and subsequent URL replacement.
 
-## Startup and preference flow
+## Commands and IPC
 
-1. Acquire the single-instance lock.
-2. Validate environment configuration once.
-3. Load versioned `preferences.json`, migrating valid legacy window state from
-   `window-state.json` without deleting the legacy file.
-4. Resolve the effective URL as valid user preference, environment first-run
-   default, or no URL.
-5. Restore safe window placement and create the frameless main window.
-6. Create the command registry from platform defaults and validated overrides.
-7. Load the local shell and install validated IPC, menu, context-menu, and
-   shortcut handlers.
-8. Create one remote generation only when a URL exists; otherwise open the
-   settings window and focus the URL field.
-
-`PreferencesStore.update` merges patches in memory, serializes writes, writes a
-temporary file, and atomically renames it. URL and shortcut writes therefore
-cannot erase a concurrent window-state patch.
-
-## Command and shortcut registry
-
-`src/shared/commands.ts` defines stable `CommandId` values, platform defaults,
-physical-key bindings, display formatting, and Electron accelerator conversion.
-`src/main/commands/command-registry.ts` validates overrides, rejects conflicts,
-resolves effective bindings, and matches input by physical code plus modifiers.
-
-The registry drives main-process dispatch, shell and settings shortcut
-listeners, the command palette summaries, the macOS application menu, and the
-right-click menu. Renderers may request only a known command identifier.
-
-Capture mode is tracked by the main process. While Settings records a binding,
-its ordinary command dispatcher is paused. Escape, focus loss, cancellation,
-and window destruction always leave capture mode.
-
-## Content generation and navigation
-
-`ContentViewController` owns a generation counter. Replacing the URL destroys
-the old `WebContentsView`, creates a new one with the same session, bounds, and
-zoom, and ignores stale events from the old generation. The current URL's exact
-origin is the only application origin; fixed authentication origins remain
-separate policy inputs.
-
-Every main-frame navigation and redirect is evaluated by
-`evaluateNavigation`. Popup, permission, download, and context-menu handling
-are installed before the first load and default to denial. The shell receives
-typed idle/loading/ready/error/crashed status events.
-
-## Bounds and overlays
-
-The workspace renderer observes `.content-host` with `ResizeObserver`,
-coalesces changes to an animation frame, and sends validated DIP bounds over
-IPC. The main process performs the final `WebContentsView.setBounds` call.
-
-When a command palette, About, or GPU diagnostic overlay is visible, the main
-process temporarily hides the native view. It is restored only when the
-content status is ready. This prevents the native child view from covering
-local UI.
-
-## IPC boundaries
-
-Shared channel names and types live in `src/shared/ipc.ts`; runtime sender and
-payload validation lives in `src/main/ipc/handlers.ts` and
-`src/main/ipc/settings-handlers.ts`. The workspace preload exposes window,
-content, bounds, command-summary/known-command, overlay, and diagnostics
-operations. The settings preload exposes snapshot, save, capture-mode, close,
-and main-request event listeners. Neither exposes `ipcRenderer`, `require`,
-filesystem, process, shell, or arbitrary execution.
-
-The two preload bundles intentionally keep their channel constants local. This
-avoids a shared preload chunk that Electron's sandboxed preload loader cannot
-resolve in packaged output.
+The main process owns the command registry and typed IPC handlers. The local
+shell receives only the existing `DesktopAPI` capabilities for commands,
+status, layout, diagnostics, and window presentation. Settings receives the
+existing preference operations. The remote page does not need `DesktopAPI` or
+the local preload to use its Node/Electron runtime.
 
 ## Source layout
 
 ```text
 src/
 ├── main/
-│   ├── commands/             authoritative registry
-│   ├── ipc/                  validated handlers
-│   ├── navigation/           origin and popup policy
-│   ├── preferences/          versioned atomic store
-│   ├── security/             config, CSP, session, validation
-│   ├── shortcuts/            main-process event dispatch
-│   └── window/               main/settings/content/context windows
-├── preload/                  capability-specific bridges
-├── renderer/src/              workspace shell
-├── renderer/settings/        settings shell
-└── shared/                   serializable contracts and pure helpers
+│   ├── app/             environment and logging
+│   ├── commands/        command registry
+│   ├── gpu/             diagnostics
+│   ├── ipc/             typed channels and handlers
+│   ├── preferences/     persisted settings
+│   ├── security/        configuration, session, and boundary validation
+│   ├── shortcuts/       keyboard handling
+│   └── window/          native windows, content view, layout, and recovery
+├── preload/              local shell and Settings bridges
+├── renderer/             local shell and Settings UI
+└── shared/               types, commands, and zoom rules
 ```
 
-Files over 1,000 lines require a split evaluation before new responsibilities
-are added. New commands, preference fields, IPC channels, origins, or
-permissions must update the corresponding tests and traceability entry.
+There is no origin-policy or popup-policy module. Removing a policy module is
+preferred to leaving an unused restriction path available for future code to
+accidentally call.

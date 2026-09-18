@@ -16,13 +16,14 @@ const fallbackWindow: PersistedWindowState = {
 };
 
 describe('preference validation', () => {
-  it('normalizes valid URLs and rejects credentials or unsupported schemes', () => {
+  it('normalizes any URL that the URL parser accepts', () => {
     expect(normalizeWorkspaceUrl(' https://workspace.example.test/path ')).toEqual({
       success: true,
       value: 'https://workspace.example.test/path',
     });
-    expect(normalizeWorkspaceUrl('https://user:secret@workspace.example.test').success).toBe(false);
-    expect(normalizeWorkspaceUrl('file:///tmp/workspace').success).toBe(false);
+    expect(normalizeWorkspaceUrl('https://user:secret@workspace.example.test').success).toBe(true);
+    expect(normalizeWorkspaceUrl('file:///tmp/workspace').success).toBe(true);
+    expect(normalizeWorkspaceUrl('data:text/html,<h1>workspace</h1>').success).toBe(true);
   });
 
   it('recovers valid fields from partially corrupt preferences', () => {
@@ -94,6 +95,6 @@ describe('preference validation', () => {
     });
     expect(
       validateSettingsDraft({ workspaceUrl: 'https://user:pass@example.test/', shortcuts: {} }),
-    ).toMatchObject({ success: false });
+    ).toMatchObject({ success: true });
   });
 });

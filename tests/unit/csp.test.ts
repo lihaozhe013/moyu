@@ -12,5 +12,6 @@ describe('shell content security policy', () => {
   it('allows development server connections only in development', () => {
     const policy = getShellContentSecurityPolicy('development');
     expect(policy).toContain("connect-src 'self' ws: http: https:");
+    expect(policy).toContain("script-src 'self' 'unsafe-inline'");
   });
 });

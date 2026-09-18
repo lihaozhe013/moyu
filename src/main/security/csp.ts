@@ -2,10 +2,11 @@ import type { AppMode } from '../../shared/types';
 import type { Session } from 'electron';
 
 export function getShellContentSecurityPolicy(mode: AppMode): string {
+  const scriptSources = mode === 'development' ? "'self' 'unsafe-inline'" : "'self'";
   const connectSources = mode === 'development' ? "'self' ws: http: https:" : "'self'";
   return [
     "default-src 'self'",
-    "script-src 'self'",
+    `script-src ${scriptSources}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",

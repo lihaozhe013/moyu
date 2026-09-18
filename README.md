@@ -1,73 +1,70 @@
 # Professional Canvas Desktop App
 
-Professional Canvas is a cross-platform Electron shell for one configured web
-workspace. It is a keyboard-first, canvas-first desktop application rather
-than a general-purpose browser.
+This is an experimental, temporary Electron runtime for loading self-authored
+web pages in a simple desktop shell. It is not a security browser and it is
+not intended to protect the user from malicious, compromised, or otherwise
+untrusted web pages.
 
-The normative constraints live in [`SPEC.md`](./SPEC.md). Architecture,
-security, UX, testing, development, release, and traceability notes are in
-[`docs/`](./docs/).
+Usability and page compatibility are the primary product goals. Load pages that
+you made or explicitly trust. Do not use this project as a general-purpose
+browser for risky websites.
+
+## Runtime policy
+
+The remote workspace is intentionally as unrestricted as Electron allows:
+
+- the `WebContentsView` uses `nodeIntegration: true`,
+  `contextIsolation: false`, `sandbox: false`, `webSecurity: false`, and
+  `allowRunningInsecureContent: true`;
+- it has no remote preload, accepts certificates through the content session,
+  and can use mixed content, HTTP, HTTPS, LAN addresses, cross-origin requests,
+  different ports, and other URLs that Electron can load;
+- navigation and redirects are not filtered by an origin list or an HTTPS
+  rule;
+- popups use the same content configuration and are allowed;
+- permission checks and permission requests are allowed;
+- downloads use Electron's default behavior; and
+- the page can access Node and Electron capabilities exposed by its renderer
+  configuration.
+
+Development and packaged/release builds use the same remote content policy.
+The only intended difference is how the local shell is served: development
+uses the Vite server and HMR, while a packaged build uses bundled assets.
+
+This broad configuration is an explicit product decision, not a security
+boundary. The application does not attempt to defend against hostile content.
 
 ## Current implementation
 
 The repository includes:
 
-- a frameless main window with no native or custom close/minimize/maximize
-  controls, persistent title bar, toolbar, inspector, or status bar;
-- a 12 px drag strip, one isolated `WebContentsView`, and local transient
-  overlays;
-- a separate single-instance frameless Settings window for workspace URL and
-  shortcut preferences;
-- a main-process command registry with platform defaults, physical-key capture,
-  conflict validation, dynamic macOS menu accelerators, and right-click
-  Settings entry;
-- versioned atomic preferences with legacy `window-state.json` migration;
-- exact-origin navigation, popup/permission/download denial, secure preload
-  boundaries, generation-safe URL replacement, zoom, fullscreen, and crash
-  recovery; and
-- deterministic loopback fixtures, required public HTTPS smoke coverage, 51
-  unit tests, and 20 Electron E2E tests.
+- a frameless, keyboard-first shell with one full-window workspace surface;
+- a separate Settings window for the workspace URL and shortcut preferences;
+- a main-process command registry and keyboard shortcuts;
+- persisted workspace preferences and first-run configuration;
+- a content session shared by the workspace and allowed popups;
+- URL loading, reload, error, crash, zoom, fullscreen, and bounds handling; and
+- deterministic loopback fixtures, unit tests, and Electron E2E coverage for
+  the unrestricted runtime.
 
-Product branding, signed artifacts, notarization, and clean Windows/macOS
-release evidence remain deployment inputs.
-
-## Product boundary
-
-The application displays one user-configured remote workspace and does not
-provide tabs, an address bar, browser history, bookmarks, extensions,
-unrestricted navigation, or uncontrolled popups. The only URL editor is in the
-local Settings window. In production, saved workspace URLs must use HTTPS and
-contain a valid host without credentials. A reachable public HTTPS workspace
-must load normally; this network capability does not expand the product into a
-general-purpose browser.
-
-## Architecture at a glance
-
-```text
-Electron main process
-├── local workspace renderer (minimal shell)
-├── local settings renderer (URL + shortcut editor)
-└── one isolated remote WebContentsView (no preload)
-```
-
-The main process owns native resources, security policy, command dispatch,
-preference persistence, and IPC validation. The two local renderers receive
-only capability-specific preload APIs. Remote content receives no application
-API.
+The first-run path caches the latest `.content-host` bounds before the remote
+view exists, then applies them as soon as the first `WebContentsView` is
+created. Saving a URL therefore creates a visible view instead of a `0x0`
+surface.
 
 ## Documentation
 
-| Document                                                       | Purpose                                                  |
-| -------------------------------------------------------------- | -------------------------------------------------------- |
-| [`SPEC.md`](./SPEC.md)                                         | Normative constraints for agents and releases            |
-| [`docs/product-experience.md`](./docs/product-experience.md)   | Visible shell, settings, keyboard, and recovery behavior |
-| [`docs/architecture.md`](./docs/architecture.md)               | Trust domains, flows, and module ownership               |
-| [`docs/security.md`](./docs/security.md)                       | Threat model and fail-closed controls                    |
-| [`docs/development.md`](./docs/development.md)                 | Toolchain, commands, boundaries, and workflow            |
-| [`docs/testing.md`](./docs/testing.md)                         | Unit, E2E, fixture, GPU, and platform checks             |
-| [`docs/release.md`](./docs/release.md)                         | Packaging, signing, and release evidence                 |
-| [`docs/implementation-plan.md`](./docs/implementation-plan.md) | Historical phase record and remaining release inputs     |
-| [`docs/traceability.md`](./docs/traceability.md)               | Requirement-to-document-to-test matrix                   |
+| Document                                                       | Purpose                                           |
+| -------------------------------------------------------------- | ------------------------------------------------- |
+| [`SPEC.md`](./SPEC.md)                                         | Normative product and runtime contract            |
+| [`docs/product-experience.md`](./docs/product-experience.md)   | Visible shell, Settings, and recovery behavior    |
+| [`docs/architecture.md`](./docs/architecture.md)               | Main-process, renderer, session, and content flow |
+| [`docs/security.md`](./docs/security.md)                       | Security scope and intentional limitations        |
+| [`docs/development.md`](./docs/development.md)                 | Toolchain, source ownership, and workflow         |
+| [`docs/testing.md`](./docs/testing.md)                         | Unit, fixture, and Electron E2E verification      |
+| [`docs/release.md`](./docs/release.md)                         | Build, packaging, and release checks              |
+| [`docs/implementation-plan.md`](./docs/implementation-plan.md) | Delivered phases and remaining release work       |
+| [`docs/traceability.md`](./docs/traceability.md)               | Requirement-to-test index                         |
 
 ## Commands
 
@@ -84,23 +81,34 @@ pnpm build:win:x64
 pnpm package
 ```
 
-`pnpm package:win` and `pnpm package:mac` remain compatibility aliases for the
-platform-specific build scripts. The macOS script produces a DMG and the
-Windows script produces an x64 NSIS EXE installer. Unsigned artifacts are
-development outputs until product signing and notarization credentials are
-available. Pushing to `publish` runs the nightly platform workflow.
+`pnpm dev` starts the Electron app with the local renderer development server.
+It does not apply a stricter remote-page policy than a production build.
 
 ## Environment
 
-Copy [`.env.example`](./.env.example) for a local configuration. Runtime
-configuration is validated once at startup. `APP_CONTENT_URL` is optional; an
-explicit empty value starts the local first-run state. User preferences take
-precedence on later launches. `APP_ALLOWED_ORIGINS` is retained for legacy
-compatibility and does not expand the active workspace origin.
+Copy [`.env.example`](./.env.example) for local configuration. `APP_CONTENT_URL`
+is the optional initial workspace URL. Leaving it empty starts the first-run
+Settings flow. Saved preferences take precedence on later launches.
+
+The supported runtime variables are `NODE_ENV`, `APP_CONTENT_URL`,
+`APP_ENABLE_DEVTOOLS`, `APP_PERSIST_SESSION`, and `APP_SESSION_NAME`.
+`APP_ALLOWED_ORIGINS`, `APP_AUTHENTICATION_ORIGINS`, and
+`APP_ALLOW_ARBITRARY_NAVIGATION` are no longer part of the configuration and
+have no runtime effect.
 
 ## Definition of done
 
-A release candidate must pass the gates in [`SPEC.md`](./SPEC.md) and
-[`docs/testing.md`](./docs/testing.md), preserve all four trust domains, show
-no browser or window-button leakage, and include platform/signing evidence or
-be clearly labeled as release-input pending.
+A change is complete when the relevant code and English documentation agree,
+the first-run view remains visible, and the appropriate checks pass. The
+standard local gate is:
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm test:e2e
+```
+
+Release signing and notarization remain deployment concerns and are not part
+of the content compatibility policy.

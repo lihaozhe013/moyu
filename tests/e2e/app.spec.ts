@@ -158,18 +158,51 @@ async function executeContent(script: string): Promise<unknown> {
   }, script);
 }
 
-async function launchApplication(initialUrl = fixtureUrl, enableDevTools = false): Promise<void> {
+async function triggerDownload(): Promise<string> {
+  if (application === undefined) {
+    throw new Error('Electron application is not running.');
+  }
+
+  return application.evaluate(({ BrowserWindow }, targetUrl) => {
+    const window = BrowserWindow.getAllWindows().find((candidate) =>
+      candidate.webContents.getURL().includes('/renderer/index.html'),
+    );
+    const child = window?.contentView.children[0] as {
+      webContents?: {
+        loadURL: (url: string) => Promise<unknown>;
+        session?: {
+          once: (
+            event: 'will-download',
+            listener: (_event: unknown, item: { getFilename: () => string }) => void,
+          ) => void;
+        };
+      };
+    };
+    if (child?.webContents?.session === undefined) {
+      throw new Error('Content session is not available.');
+    }
+    return new Promise<string>((resolve) => {
+      child.webContents!.session!.once('will-download', (_event, item) => {
+        resolve(item.getFilename());
+      });
+      void child.webContents!.loadURL(targetUrl);
+    });
+  }, `${fixtureOrigin}/download`);
+}
+
+async function launchApplication(
+  initialUrl = fixtureUrl,
+  enableDevTools = false,
+  runtimeMode: 'test' | 'production' = 'test',
+): Promise<void> {
   userDataPath = await mkdtemp(join(tmpdir(), 'professional-canvas-e2e-'));
   application = await electron.launch({
     args: [mainEntry, `--user-data-dir=${userDataPath}`],
     env: {
       ...process.env,
-      NODE_ENV: 'test',
+      NODE_ENV: runtimeMode,
       APP_CONTENT_URL: initialUrl,
-      APP_ALLOWED_ORIGINS: fixtureOrigin,
-      APP_AUTHENTICATION_ORIGINS: '',
       APP_ENABLE_DEVTOOLS: enableDevTools ? 'true' : 'false',
-      APP_ALLOW_ARBITRARY_NAVIGATION: 'false',
       APP_PERSIST_SESSION: 'false',
       APP_SESSION_NAME: 'e2e',
     },
@@ -245,6 +278,7 @@ for (const site of knownWebsites) {
       .toMatch(new RegExp(`^${site.origin.replaceAll('.', '\\.')}`));
     await expect.poll(async () => executeContent('document.title')).not.toBe('');
     expect(await executeContent('typeof window.desktopAPI')).toBe('undefined');
+    expect(await executeContent('typeof process?.versions?.electron')).toBe('string');
     await assertBorderlessWorkspace(shell);
   });
 }
@@ -320,6 +354,42 @@ test('opens settings automatically when no workspace URL is configured', async (
   await expect(settings!.locator('#workspace-url')).toBeFocused();
 });
 
+test('loads the workspace when a URL is first configured from an empty state', async () => {
+  await launchApplication('');
+  const shell = await application!.firstWindow();
+  await expect(shell.locator('.empty-workspace')).toBeVisible();
+
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'));
+  expect(settings).toBeDefined();
+  await settings!.waitForSelector('.settings-window');
+
+  await settings!.locator('#workspace-url').fill(fixtureUrl);
+  await settings!.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(settings!.locator('.settings-footer__status')).toContainText('Saved');
+  await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
+  await expect.poll(async () => (await readContentSnapshot()).loading).toBe(false);
+  await expect.poll(async () => (await readContentSnapshot()).bounds.width).toBeGreaterThan(0);
+  await expect.poll(async () => (await readContentSnapshot()).bounds.height).toBeGreaterThan(0);
+  await expect
+    .poll(async () =>
+      executeContent('document.querySelector(\'[data-fixture-ready="true"]\') !== null'),
+    )
+    .toBe(true);
+  await expect(shell.locator('.empty-workspace')).toHaveCount(0);
+  await expect(settings!.locator('.settings-window')).toBeVisible();
+  await assertBorderlessWorkspace(shell);
+});
+
 test('records a shortcut from the keyboard and persists the edited draft', async () => {
   await launchApplication();
   const shell = await application!.firstWindow();
@@ -379,7 +449,7 @@ test('rejects conflicting shortcut captures before activation', async () => {
   await expect(settings.locator('.settings-footer__status')).toContainText('conflicts');
 });
 
-test('blocks a denied redirect and keeps the current trusted workspace', async () => {
+test('allows redirects to another origin', async () => {
   await launchApplication();
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
 
@@ -389,10 +459,11 @@ test('blocks a denied redirect and keeps the current trusted workspace', async (
       webContents?: { loadURL: (url: string) => void };
     };
     child?.webContents?.loadURL(url);
-  }, `${fixtureOrigin}/redirect-denied`);
+  }, `${fixtureOrigin}/redirect-cross-origin`);
 
-  await new Promise((resolvePromise) => setTimeout(resolvePromise, 500));
-  await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
+  await expect
+    .poll(async () => (await readContentSnapshot()).url)
+    .toBe(`http://localhost:4311/cross-origin-target`);
 });
 
 test('keeps native content bounds aligned while the shell is resized', async () => {
@@ -453,35 +524,54 @@ test('supports maximize and fullscreen while preserving the prior presentation s
     .toBe(true);
 });
 
-test('denies popup creation and unsupported permissions', async () => {
-  await launchApplication();
-  const shell = await application!.firstWindow();
+for (const runtimeMode of ['test', 'production'] as const) {
+  test(`keeps the unrestricted content runtime in ${runtimeMode} mode`, async () => {
+    await launchApplication(fixtureUrl, false, runtimeMode);
+    const shell = await application!.firstWindow();
+    expect(await executeContent('typeof process?.versions?.electron')).toBe('string');
 
-  await navigateContent(`${fixtureOrigin}/popup`);
-  await expect.poll(async () => (await readContentSnapshot()).url).toBe(`${fixtureOrigin}/popup`);
-  await expect
-    .poll(async () =>
-      executeContent(
-        "document.querySelector('#open-popup').click(); document.querySelector('#result').textContent",
-      ),
-    )
-    .toBe('denied');
-  await expect
-    .poll(async () =>
-      application!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
-    )
-    .toBe(1);
+    await navigateContent(`${fixtureOrigin}/popup`);
+    await expect.poll(async () => (await readContentSnapshot()).url).toBe(`${fixtureOrigin}/popup`);
+    await expect
+      .poll(async () =>
+        executeContent(
+          "document.querySelector('#open-popup').click(); document.querySelector('#result').textContent",
+        ),
+      )
+      .toBe('opened');
+    await expect
+      .poll(async () =>
+        application!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
+      )
+      .toBeGreaterThan(1);
+    await expect
+      .poll(async () =>
+        application!.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows().some((window) =>
+            window.webContents.getURL().includes('/popup-target'),
+          ),
+        ),
+      )
+      .toBe(true);
 
-  await navigateContent(`${fixtureOrigin}/permission`);
-  await expect
-    .poll(async () => (await readContentSnapshot()).url)
-    .toBe(`${fixtureOrigin}/permission`);
-  await executeContent("document.querySelector('#request-permission').click()");
-  await expect
-    .poll(async () => executeContent("document.querySelector('#result').textContent"))
-    .toBe('denied');
-  await expect(shell.locator('.error-overlay')).toHaveCount(0);
-});
+    await navigateContent(`${fixtureOrigin}/permission`);
+    await expect
+      .poll(async () => (await readContentSnapshot()).url)
+      .toBe(`${fixtureOrigin}/permission`);
+    await executeContent("document.querySelector('#request-permission').click()");
+    await expect
+      .poll(async () => executeContent("document.querySelector('#result').textContent"))
+      .toMatch(/^(requested|granted)$/);
+    await expect(shell.locator('.error-overlay')).toHaveCount(0);
+
+    await expect.poll(async () => triggerDownload()).toBe('fixture.txt');
+
+    await navigateContent(`${fixtureOrigin}/redirect-cross-origin`);
+    await expect
+      .poll(async () => (await readContentSnapshot()).url)
+      .toBe('http://localhost:4311/cross-origin-target');
+  });
+}
 
 test('reloads content and keeps zoom within the approved steps', async () => {
   await launchApplication();

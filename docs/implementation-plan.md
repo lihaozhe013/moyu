@@ -1,113 +1,67 @@
 # Implementation Plan and Phase Record
 
-This is the historical execution record for the keyboard-first workspace
-constraints in [`../SPEC.md`](../SPEC.md). The specification is normative;
-this document records sequencing, commits, gates, and remaining deployment
-inputs.
+This document records the implementation of the experimental, self-authored
+web runtime. The current product direction is simplicity and page compatibility
+over security isolation.
 
 ## Delivery principles
 
-- Establish pure contracts and fail-closed policy before Electron wiring.
-- Keep main, workspace renderer, settings renderer, and remote content as
-  separate trust domains.
-- Route all shell commands through one registry and all preferences through one
-  versioned atomic store.
-- Verify each phase with `pnpm typecheck`, `pnpm lint`, `pnpm test`, and
-  `pnpm build`; cross-process phases also run `pnpm test:e2e`.
-- Use English Conventional Commits and update focused documentation when a
-  behavior or contract changes.
+- Keep the shell small and keyboard-first.
+- Let Electron load any URL it can parse and handle.
+- Use one identical remote content policy in development and release.
+- Preserve the first-run bounds fix so a newly created view is visible.
+- Avoid application-level allowlists, denial policies, and defensive fallbacks.
+- Document that only self-authored or trusted pages should be loaded.
 
 ## Completed phases
 
-### 1. Constraint baseline
+### 1. Shell and workspace lifecycle
 
-`docs(spec): define keyboard-first workspace constraints`
+- Frameless shell and local Settings window are implemented.
+- Workspace URL persistence, reload, crash recovery, zoom, fullscreen, and
+  loading/error states are implemented.
+- Settings remains open after a successful URL save.
 
-Rewrote `SPEC.md` as an agent-facing constraint reference: four trust
-domains, frameless no-button shell, keyboard-complete command model, separate
-Settings window, dynamic URL/origin policy, versioned preferences, and
-fail-closed security/verification requirements.
+### 2. First-run view geometry
 
-### 2. Contracts, preferences, and migration
+- The main process caches the latest `.content-host` bounds even when there is
+  no content view.
+- A view created after the first URL save receives those bounds before loading.
+- Resize, reload, and subsequent URL changes keep the view aligned.
 
-`refactor(core): add command and preference contracts`
+### 3. Unrestricted content runtime
 
-Added serializable command/shortcut/preferences types, URL and shortcut
-validation, partial-field recovery, version 1 preference storage, atomic
-temporary-file rename, concurrent patch merging, and migration from the
-legacy window-state file without deleting it.
+- Workspace and popup views use Node/Electron access, disabled sandbox and web
+  security, insecure-content support, and no remote preload.
+- Certificate verification is accepted by the content session.
+- Navigation and redirects are no longer filtered by origin or production
+  scheme.
+- Permission checks and requests are allowed.
+- Downloads use Electron defaults.
+- Origin, authentication-origin, arbitrary-navigation, popup, download, and
+  strict permission policy modules were removed.
 
-### 3. Command registry
+### 4. Verification and documentation
 
-`feat(commands): add customizable command registry`
+- Configuration and preference tests accept parseable HTTP, HTTPS, credentialed,
+  local, and other URL forms.
+- E2E coverage includes first-run saving, nonzero native bounds, cross-origin
+  redirects, popup creation, permission requests, and test/production parity.
+- Repository documentation now describes the runtime as experimental and not a
+  security browser.
 
-Added platform defaults (including macOS Cmd+M/Cmd+Shift+M and Windows
-Alt+M/Alt+Shift+M), physical-key matching, conflict rejection, dynamic menu
-accelerators, surface-aware dispatch, and settings-capture pause behavior.
+## Current verification shape
 
-### 4. Settings and dynamic workspace URL
-
-`feat(settings): add workspace and shortcut preferences`
-
-Added the independent 760×640 frameless Settings window, minimal preload and
-IPC boundary, searchable URL/shortcut form, physical-key capture, reset and
-dirty-state flows, no-URL first-run behavior, immediate URL replacement, and
-generation-safe content recreation.
-
-### 5. Minimal keyboard-first shell
-
-`feat(shell): adopt minimal keyboard-first workspace`
-
-Removed persistent titlebar, menu bar, tool rail, inspector, status bar, and
-custom window buttons. Added the 12 px drag strip, dynamic command palette,
-overlay-aware native view visibility, unified right-click Settings menu,
-macOS registry-backed application menu, and shell command IPC.
-
-## Verification status
-
-The current local gate passes:
-
-```text
-18 unit-test files / 51 tests
-20 Electron E2E scenarios
-pnpm typecheck
-pnpm lint
-pnpm build
-```
-
-E2E covers frameless shell composition, content bounds, command palette,
-settings single-instance and URL switching, no-URL first run, shortcut capture,
-navigation/popup/permission/download denial, zoom, fullscreen, GPU diagnostics,
-load failure, renderer crash recovery, local edge-to-edge HTML fixtures, and
-required public HTTPS workspace smoke tests for GitHub, Wikipedia, and Mozilla.
-
-## Public network acceptance update
-
-The public-site smoke tests are part of the acceptance contract, not optional
-best-effort checks. The previous reachability preflight was removed because it
-could skip the actual Electron load and incorrectly report an offline or
-misconfigured environment as healthy.
-
-The revised gate launches each canonical public site in a fresh application
-process and requires the same ready state, exact-origin policy, remote preload
-isolation, and borderless geometry used by the configured workspace. DNS, TLS,
-proxy, firewall, captive-portal, certificate, and site-availability failures
-are visible E2E failures. Loopback fixtures remain for deterministic local
-diagnosis, but they cannot substitute for the public HTTPS gate in release
-evidence.
+The repository currently contains 17 Vitest files with 47 unit tests and 22
+Electron E2E scenarios. The exact count can change as fixtures and shell
+features evolve; the commands in `README.md` remain authoritative.
 
 ## Remaining release work
 
-The implementation is complete for the requested keyboard-first design. The
-remaining work is deployment-specific:
+The following are deployment tasks rather than content-policy tasks:
 
-- approve final product name, identifiers, icon, and branding assets;
-- provide production workspace and reviewed authentication/support origins;
-- validate packaged Windows 11 x64 and macOS arm64/x64 behavior on clean
-  machines and mixed-DPI displays;
-- configure signing/notarization credentials and verify release artifacts; and
-- collect manual native context-menu, frameless-resize, traffic-light, and
-  platform-menu evidence.
-
-No release input may weaken the origin, preload, permission, download, popup,
-or keyboard constraints.
+- produce platform-specific packaged artifacts;
+- complete Windows and macOS manual window and input checks;
+- decide whether signing and notarization are wanted for a temporary build;
+- record toolchain, platform, and test evidence for a release; and
+- keep the self-authored-page limitation visible in release notes.
