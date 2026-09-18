@@ -29,7 +29,11 @@ function primaryShortcut(key: string): string {
 let application: Awaited<ReturnType<typeof electron.launch>> | undefined;
 let userDataPath: string | undefined;
 
-async function readContentSnapshot(): Promise<{ url: string; bounds: Record<string, number> }> {
+async function readContentSnapshot(): Promise<{
+  url: string;
+  loading: boolean;
+  bounds: Record<string, number>;
+}> {
   if (application === undefined) {
     throw new Error('Electron application is not running.');
   }
@@ -39,10 +43,14 @@ async function readContentSnapshot(): Promise<{ url: string; bounds: Record<stri
       candidate.webContents.getURL().includes('/renderer/index.html'),
     );
     const child = window?.contentView.children[0] as
-      | { webContents?: { getURL: () => string }; getBounds?: () => Record<string, number> }
+      | {
+          webContents?: { getURL: () => string; isLoading: () => boolean };
+          getBounds?: () => Record<string, number>;
+        }
       | undefined;
     return {
       url: child?.webContents?.getURL() ?? '',
+      loading: child?.webContents?.isLoading() ?? true,
       bounds: child?.getBounds?.() ?? {},
     };
   });
@@ -168,6 +176,17 @@ async function launchApplication(initialUrl = fixtureUrl, enableDevTools = false
   });
   const shell = await application.firstWindow();
   await shell.waitForSelector('.app-shell');
+  if (initialUrl !== '') {
+    await expect
+      .poll(
+        async () => {
+          const snapshot = await readContentSnapshot();
+          return snapshot.url !== '' && !snapshot.loading;
+        },
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+  }
 }
 
 test.afterEach(async () => {
