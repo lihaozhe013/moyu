@@ -116,7 +116,7 @@ alignment behavior.
 
 The command registry MUST define a customizable `window.drag` command with a
 `hold` activation and `workspace` scope. Its default binding MUST be
-`Cmd+Shift+Space` on macOS and `Ctrl+Shift+Space` on Windows/Linux. The
+`Cmd+Shift+Z` on macOS and `Ctrl+Shift+Z` on Windows/Linux. The
 command MUST be excluded from the command palette because it is a held mode,
 not a one-shot command.
 

@@ -27,7 +27,7 @@ match the host rectangle, including on high-DPI displays and after resizing.
 ## Whole-window dragging
 
 The main workspace has a customizable hold-to-drag shortcut. Its default is
-`⌘⇧Space` on macOS and `Ctrl+Shift+Space` on Windows/Linux. The command is
+`⌘⇧Z` on macOS and `Ctrl+Shift+Z` on Windows/Linux. The command is
 workspace-scoped and is not shown in the command palette.
 
 While the shortcut is held, pressing and dragging the left mouse button

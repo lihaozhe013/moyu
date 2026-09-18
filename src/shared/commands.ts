@@ -80,7 +80,7 @@ function platformWindowBinding(
 }
 
 function windowDragBinding(platform: SupportedPlatform): ShortcutBinding {
-  return binding('Space', platform === 'darwin' ? ['meta', 'shift'] : ['control', 'shift']);
+  return binding('KeyZ', platform === 'darwin' ? ['meta', 'shift'] : ['control', 'shift']);
 }
 
 export function createCommandDefinitions(

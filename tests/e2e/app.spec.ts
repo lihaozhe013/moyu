@@ -163,7 +163,7 @@ async function executeContent(script: string): Promise<unknown> {
 async function sendWorkspaceKey(
   type: 'keyDown' | 'keyUp',
   modifiers: readonly ('alt' | 'control' | 'meta' | 'shift')[],
-  keyCode = 'Space',
+  keyCode = 'Z',
 ): Promise<void> {
   if (application === undefined) {
     throw new Error('Electron application is not running.');

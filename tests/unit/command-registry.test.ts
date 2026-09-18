@@ -19,12 +19,12 @@ describe('command registry contracts', () => {
     expect(mac.find((definition) => definition.id === 'window.drag')).toMatchObject({
       scope: 'workspace',
       activation: 'hold',
-      defaultBinding: { code: 'Space', modifiers: ['meta', 'shift'] },
+      defaultBinding: { code: 'KeyZ', modifiers: ['meta', 'shift'] },
     });
     expect(windows.find((definition) => definition.id === 'window.drag')).toMatchObject({
       scope: 'workspace',
       activation: 'hold',
-      defaultBinding: { code: 'Space', modifiers: ['control', 'shift'] },
+      defaultBinding: { code: 'KeyZ', modifiers: ['control', 'shift'] },
     });
   });
 
@@ -84,14 +84,14 @@ describe('command registry contracts', () => {
     ).toBe('settings.save');
     expect(
       registry.match(
-        { code: 'Space', alt: false, control: true, meta: false, shift: true },
+        { code: 'KeyZ', alt: false, control: true, meta: false, shift: true },
         'workspace',
         false,
       ),
     ).toBe('window.drag');
     expect(
       registry.match(
-        { code: 'Space', alt: false, control: true, meta: false, shift: true },
+        { code: 'KeyZ', alt: false, control: true, meta: false, shift: true },
         'settings',
         false,
       ),

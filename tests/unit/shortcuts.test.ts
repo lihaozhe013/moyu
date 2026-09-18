@@ -141,7 +141,7 @@ describe('application shortcuts', () => {
     expect(
       content.trigger({
         type: 'keyDown',
-        key: 'Space',
+        key: 'Z',
         control: true,
         meta: false,
         shift: true,
@@ -151,7 +151,7 @@ describe('application shortcuts', () => {
     expect(
       content.trigger({
         type: 'keyDown',
-        key: 'Space',
+        key: 'Z',
         control: true,
         meta: false,
         shift: true,
@@ -161,7 +161,7 @@ describe('application shortcuts', () => {
     expect(
       shell.trigger({
         type: 'keyUp',
-        key: 'Space',
+        key: 'Z',
         control: true,
         meta: false,
         shift: true,
@@ -190,7 +190,7 @@ describe('application shortcuts', () => {
 
     content.trigger({
       type: 'keyDown',
-      key: 'Space',
+      key: 'Z',
       control: true,
       meta: false,
       shift: true,

@@ -42,8 +42,8 @@ The repository includes:
   no persistent drag strip or titlebar decoration;
 - a separate Settings window for the workspace URL and shortcut preferences;
 - a main-process command registry and keyboard shortcuts;
-- a customizable hold-to-drag shortcut, defaulting to `Cmd+Shift+Space` on
-  macOS and `Ctrl+Shift+Space` on Windows/Linux;
+- a customizable hold-to-drag shortcut, defaulting to `Cmd+Shift+Z` on macOS
+  and `Ctrl+Shift+Z` on Windows/Linux;
 - persisted workspace preferences and first-run configuration;
 - a content session shared by the workspace and allowed popups;
 - URL loading, reload, error, crash, zoom, fullscreen, and bounds handling; and

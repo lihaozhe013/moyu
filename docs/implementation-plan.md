@@ -52,8 +52,8 @@ over security isolation.
 
 ### 5. Whole-window drag and chrome removal
 
-- The default hold shortcut is `Cmd+Shift+Space` on macOS and
-  `Ctrl+Shift+Space` on Windows/Linux, with Settings customization and
+- The default hold shortcut is `Cmd+Shift+Z` on macOS and
+  `Ctrl+Shift+Z` on Windows/Linux, with Settings customization and
   conflict validation.
 - The `window.drag` command is hold-activated and workspace-scoped, so Settings
   and the command palette do not treat it as a normal command.
