@@ -8,12 +8,12 @@
     "win32": null
   },
   "palette.open": {
-    "darwin": { "code": "KeyP", "modifiers": ["meta", "shift"] },
-    "win32": { "code": "KeyP", "modifiers": ["control", "shift"] }
+    "darwin": { "code": "KeyK", "modifiers": ["meta"] },
+    "win32": { "code": "KeyK", "modifiers": ["control"] }
   },
   "window.minimize": {
-    "darwin": { "code": "KeyM", "modifiers": ["meta"] },
-    "win32": { "code": "KeyM", "modifiers": ["control"] }
+    "darwin": { "code": "KeyW", "modifiers": ["meta"] },
+    "win32": { "code": "KeyW", "modifiers": ["control"] }
   },
   "window.toggleMaximize": {
     "darwin": null,
