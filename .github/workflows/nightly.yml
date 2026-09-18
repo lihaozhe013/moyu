@@ -236,7 +236,7 @@ jobs:
               -f "body=${release_body}" \
               -F draft=true \
               -F prerelease=true \
-              -F make_latest=false >/dev/null
+              -f make_latest=false >/dev/null
           else
             release_id="$(gh api --method POST "${releases_api}" \
               -f tag_name=nightly \
@@ -244,7 +244,7 @@ jobs:
               -f "body=${release_body}" \
               -F draft=true \
               -F prerelease=true \
-              -F make_latest=false \
+              -f make_latest=false \
               --jq '.id')"
           fi
 
@@ -265,4 +265,4 @@ jobs:
           gh api --method PATCH "${releases_api}/${release_id}" \
             -F draft=false \
             -F prerelease=true \
-            -F make_latest=false >/dev/null
+            -f make_latest=false >/dev/null
