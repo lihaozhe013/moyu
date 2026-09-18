@@ -1,10 +1,4 @@
 :root {
-  --titlebar-height: 32px;
-  --toolbar-height: 36px;
-  --toolrail-width: 48px;
-  --inspector-width: 280px;
-  --statusbar-height: 24px;
-
   --bg-app: #181818;
   --bg-panel: #202020;
   --bg-panel-raised: #292929;

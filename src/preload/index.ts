@@ -1,6 +1,28 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type DesktopAPI } from '../shared/ipc';
+import type { DesktopAPI } from '../shared/ipc';
 import type { ContentStatus, GpuDiagnostics } from '../shared/types';
+
+const IPC_CHANNELS = {
+  windowMinimize: 'window:minimize',
+  windowToggleMaximize: 'window:toggle-maximize',
+  windowClose: 'window:close',
+  windowToggleFullscreen: 'window:toggle-fullscreen',
+  windowGetState: 'window:get-state',
+  contentReload: 'content:reload',
+  contentHardReload: 'content:hard-reload',
+  contentSetZoomFactor: 'content:set-zoom-factor',
+  contentGetZoomFactor: 'content:get-zoom-factor',
+  contentZoomChanged: 'content:zoom-changed',
+  contentGetState: 'content:get-state',
+  contentStateChanged: 'content:state-changed',
+  layoutSetContentBounds: 'layout:set-content-bounds',
+  commandPaletteOpen: 'command-palette:open',
+  commandPaletteClose: 'command-palette:close',
+  commandsGetSummaries: 'commands:get-summaries',
+  commandsExecute: 'commands:execute',
+  shellSetOverlayVisible: 'shell:set-overlay-visible',
+  diagnosticsGetGpu: 'diagnostics:get-gpu',
+} as const;
 
 function isContentStatus(value: unknown): value is ContentStatus {
   if (typeof value !== 'object' || value === null || !('type' in value)) {
@@ -94,6 +116,10 @@ const desktopApi: DesktopAPI = {
     },
   },
   commands: {
+    getSummaries: () => ipcRenderer.invoke(IPC_CHANNELS.commandsGetSummaries),
+    execute: (commandId) => ipcRenderer.invoke(IPC_CHANNELS.commandsExecute, commandId),
+    setOverlayVisible: (visible) =>
+      ipcRenderer.invoke(IPC_CHANNELS.shellSetOverlayVisible, visible),
     onPaletteOpen: (listener) => {
       const handler = (): void => listener();
       ipcRenderer.on(IPC_CHANNELS.commandPaletteOpen, handler);

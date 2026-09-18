@@ -1,10 +1,21 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type SettingsAPI } from '../shared/ipc';
+import type { SettingsAPI } from '../shared/ipc';
 import type { SettingsDraft, SettingsSaveResult, SettingsSnapshot } from '../shared/types';
+
+const IPC_CHANNELS = {
+  settingsGetSnapshot: 'settings:get-snapshot',
+  settingsSave: 'settings:save',
+  settingsSetCaptureMode: 'settings:set-capture-mode',
+  settingsClose: 'settings:close',
+  settingsSaveRequested: 'settings:save-requested',
+  settingsCloseRequested: 'settings:close-requested',
+  settingsDismissRequested: 'settings:dismiss-requested',
+} as const;
 
 const settingsApi: SettingsAPI = {
   settings: {
-    getSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.settingsGetSnapshot) as Promise<SettingsSnapshot>,
+    getSnapshot: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.settingsGetSnapshot) as Promise<SettingsSnapshot>,
     save: (draft: SettingsDraft) =>
       ipcRenderer.invoke(IPC_CHANNELS.settingsSave, draft) as Promise<SettingsSaveResult>,
     setCaptureMode: (active: boolean) =>

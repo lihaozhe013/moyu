@@ -22,6 +22,9 @@ export const IPC_CHANNELS = {
   layoutSetContentBounds: 'layout:set-content-bounds',
   commandPaletteOpen: 'command-palette:open',
   commandPaletteClose: 'command-palette:close',
+  commandsGetSummaries: 'commands:get-summaries',
+  commandsExecute: 'commands:execute',
+  shellSetOverlayVisible: 'shell:set-overlay-visible',
   settingsGetSnapshot: 'settings:get-snapshot',
   settingsSave: 'settings:save',
   settingsSetCaptureMode: 'settings:set-capture-mode',
@@ -61,6 +64,9 @@ export interface DesktopAPI {
     readonly onStateChange: (listener: (state: ContentStatus) => void) => () => void;
   };
   readonly commands: {
+    readonly getSummaries: () => Promise<readonly import('./commands').CommandSummary[]>;
+    readonly execute: (commandId: import('./types').CommandId) => Promise<void>;
+    readonly setOverlayVisible: (visible: boolean) => Promise<void>;
     readonly onPaletteOpen: (listener: () => void) => () => void;
     readonly onPaletteClose: (listener: () => void) => () => void;
   };

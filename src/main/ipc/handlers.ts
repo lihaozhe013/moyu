@@ -1,11 +1,13 @@
 import { BrowserWindow, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import { IPC_CHANNELS } from './channels';
 import type {
+  CommandId,
   ContentBounds,
   ContentStatus,
   GpuDiagnostics,
   WindowPresentationState,
 } from '../../shared/types';
+import { isCommandId, type CommandSummary } from '../../shared/commands';
 import {
   validateSetContentBoundsPayload,
   validateSetZoomFactorPayload,
@@ -24,6 +26,9 @@ export interface IpcHandlerDependencies {
   readonly hardReloadContent?: () => Promise<void>;
   readonly setContentBounds?: (bounds: ContentBounds) => void;
   readonly getGpuDiagnostics?: () => GpuDiagnostics;
+  readonly getCommandSummaries?: () => readonly CommandSummary[];
+  readonly executeCommand?: (commandId: CommandId) => void;
+  readonly setOverlayVisible?: (visible: boolean) => void;
 }
 
 export function isExpectedShellSender(
@@ -63,6 +68,10 @@ function requireContentWebContents(dependencies: IpcHandlerDependencies): Electr
   return contentWebContents;
 }
 
+function isBooleanPayload(input: unknown): input is boolean {
+  return typeof input === 'boolean';
+}
+
 export function emitContentState(mainWindow: BrowserWindow | null, state: ContentStatus): void {
   if (mainWindow === null || mainWindow.isDestroyed()) {
     return;
@@ -91,6 +100,9 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
     IPC_CHANNELS.contentGetState,
     IPC_CHANNELS.layoutSetContentBounds,
     IPC_CHANNELS.diagnosticsGetGpu,
+    IPC_CHANNELS.commandsGetSummaries,
+    IPC_CHANNELS.commandsExecute,
+    IPC_CHANNELS.shellSetOverlayVisible,
   ] as const;
 
   ipcMain.handle(IPC_CHANNELS.windowMinimize, (event) => {
@@ -191,6 +203,24 @@ export function registerIpcHandlers(dependencies: IpcHandlerDependencies): () =>
       throw new Error('GPU diagnostics are not available.');
     }
     return dependencies.getGpuDiagnostics();
+  });
+  ipcMain.handle(IPC_CHANNELS.commandsGetSummaries, (event) => {
+    getOwnedWindow(event, dependencies);
+    return dependencies.getCommandSummaries?.() ?? [];
+  });
+  ipcMain.handle(IPC_CHANNELS.commandsExecute, (event, input: unknown) => {
+    getOwnedWindow(event, dependencies);
+    if (typeof input !== 'string' || !isCommandId(input)) {
+      throw new Error('Command ID is invalid.');
+    }
+    dependencies.executeCommand?.(input);
+  });
+  ipcMain.handle(IPC_CHANNELS.shellSetOverlayVisible, (event, input: unknown) => {
+    getOwnedWindow(event, dependencies);
+    if (!isBooleanPayload(input)) {
+      throw new Error('Overlay visibility must be a boolean.');
+    }
+    dependencies.setOverlayVisible?.(input);
   });
 
   return () => {

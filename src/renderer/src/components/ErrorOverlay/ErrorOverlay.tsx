@@ -1,12 +1,10 @@
 interface ErrorOverlayProps {
-  readonly onRetry?: () => void;
   readonly title?: string;
   readonly description?: string;
   readonly errorCode?: number;
 }
 
 export function ErrorOverlay({
-  onRetry,
   title = 'Unable to load workspace',
   description = 'The workspace is not available right now. Try again when your connection is ready.',
   errorCode,
@@ -19,9 +17,7 @@ export function ErrorOverlay({
       <h2>{title}</h2>
       <p>{description}</p>
       {errorCode === undefined ? null : <span>Error code: {errorCode}</span>}
-      <button type="button" onClick={onRetry} disabled={onRetry === undefined}>
-        Retry
-      </button>
+      <span className="error-overlay__hint">Use the Reload Workspace shortcut to try again.</span>
     </div>
   );
 }

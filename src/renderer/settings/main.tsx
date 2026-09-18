@@ -1,6 +1,11 @@
 import { StrictMode, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { CommandId, SettingsDraft, SettingsSnapshot, ShortcutBinding } from '../../shared/types';
+import type {
+  CommandId,
+  SettingsDraft,
+  SettingsSnapshot,
+  ShortcutBinding,
+} from '../../shared/types';
 import { formatShortcutBinding } from '../../shared/commands';
 import './styles.css';
 
@@ -224,7 +229,9 @@ function SettingsApp(): React.JSX.Element {
           <h1>Settings</h1>
           <p className="settings-subtitle">Configure the workspace and keyboard-first controls.</p>
         </div>
-        <div className="settings-header__hint">{platform === 'darwin' ? '⌘' : 'Ctrl'}+, to open</div>
+        <div className="settings-header__hint">
+          {platform === 'darwin' ? '⌘' : 'Ctrl'}+, to open
+        </div>
       </header>
 
       <div className="settings-content">
@@ -232,15 +239,21 @@ function SettingsApp(): React.JSX.Element {
           <div className="settings-section__heading">
             <div>
               <h2 id="workspace-heading">Workspace URL</h2>
-              <p>Use an HTTPS workspace in production. Local HTTP URLs are available in development and tests.</p>
+              <p>
+                Use an HTTPS workspace in production. Local HTTP URLs are available in development
+                and tests.
+              </p>
             </div>
           </div>
-          <label className="field-label" htmlFor="workspace-url">URL</label>
+          <label className="field-label" htmlFor="workspace-url">
+            URL
+          </label>
           <input
             ref={urlRef}
             id="workspace-url"
             className={`text-input${fieldErrors.workspaceUrl ? ' text-input--error' : ''}`}
             value={workspaceUrl}
+            autoFocus={snapshot.workspaceUrl === undefined}
             onChange={(event) => {
               setWorkspaceUrl(event.target.value);
               updateDraft();
@@ -249,18 +262,27 @@ function SettingsApp(): React.JSX.Element {
             spellCheck={false}
             autoComplete="off"
           />
-          {fieldErrors.workspaceUrl ? <p className="field-error">{fieldErrors.workspaceUrl}</p> : null}
+          {fieldErrors.workspaceUrl ? (
+            <p className="field-error">{fieldErrors.workspaceUrl}</p>
+          ) : null}
         </section>
 
         <section className="settings-section" aria-labelledby="shortcuts-heading">
           <div className="settings-section__heading settings-section__heading--shortcuts">
             <div>
               <h2 id="shortcuts-heading">Keyboard Shortcuts</h2>
-              <p>Each command uses one physical key combination. Select Record and press the new combination.</p>
+              <p>
+                Each command uses one physical key combination. Select Record and press the new
+                combination.
+              </p>
             </div>
-            <button type="button" className="quiet-button" onClick={resetAllShortcuts}>Reset all</button>
+            <button type="button" className="quiet-button" onClick={resetAllShortcuts}>
+              Reset all
+            </button>
           </div>
-          <label className="field-label" htmlFor="shortcut-search">Search commands</label>
+          <label className="field-label" htmlFor="shortcut-search">
+            Search commands
+          </label>
           <input
             id="shortcut-search"
             className="text-input"
@@ -274,42 +296,97 @@ function SettingsApp(): React.JSX.Element {
               const binding = shortcuts[command.id] ?? command.defaultBinding;
               const isCapturing = captureCommand === command.id;
               return (
-                <div className={`shortcut-row${isCapturing ? ' shortcut-row--capturing' : ''}`} key={command.id}>
+                <div
+                  className={`shortcut-row${isCapturing ? ' shortcut-row--capturing' : ''}`}
+                  key={command.id}
+                >
                   <div className="shortcut-row__copy">
                     <strong>{command.label}</strong>
                     <span>{command.description}</span>
                   </div>
-                  <code className="shortcut-key">{isCapturing ? 'Press keys…' : formatShortcutBinding(binding, platform)}</code>
-                  <button type="button" className="quiet-button" onClick={() => startCapture(command.id)} disabled={captureCommand !== null}>
+                  <code className="shortcut-key">
+                    {isCapturing ? 'Press keys…' : formatShortcutBinding(binding, platform)}
+                  </code>
+                  <button
+                    type="button"
+                    className="quiet-button"
+                    onClick={() => startCapture(command.id)}
+                    disabled={captureCommand !== null}
+                  >
                     {isCapturing ? 'Recording' : 'Record'}
                   </button>
-                  <button type="button" className="icon-button" onClick={() => resetShortcut(command.id)} aria-label={`Reset ${command.label}`} title="Reset to default">↺</button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    onClick={() => resetShortcut(command.id)}
+                    aria-label={`Reset ${command.label}`}
+                    title="Reset to default"
+                  >
+                    ↺
+                  </button>
                 </div>
               );
             })}
           </div>
-          {fieldErrors.shortcuts ? <p className="field-error" role="alert">{fieldErrors.shortcuts}</p> : null}
-          {captureError ? <p className="field-error" role="alert">{captureError}</p> : null}
+          {fieldErrors.shortcuts ? (
+            <p className="field-error" role="alert">
+              {fieldErrors.shortcuts}
+            </p>
+          ) : null}
+          {captureError ? (
+            <p className="field-error" role="alert">
+              {captureError}
+            </p>
+          ) : null}
         </section>
       </div>
 
       <footer className="settings-footer">
-        <div className="settings-footer__status" role="status">{notice ?? (dirty ? 'Unsaved changes' : '')}</div>
+        <div className="settings-footer__status" role="status">
+          {notice ?? (dirty ? 'Unsaved changes' : '')}
+        </div>
         <div className="settings-footer__actions">
-          <button type="button" className="quiet-button" onClick={requestClose}>Cancel</button>
-          <button type="button" className="primary-button" onClick={() => void saveSettings()} disabled={!dirty || captureCommand !== null}>Save</button>
+          <button type="button" className="quiet-button" onClick={requestClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => void saveSettings()}
+            disabled={!dirty || captureCommand !== null}
+          >
+            Save
+          </button>
         </div>
       </footer>
 
       {closePrompt ? (
         <div className="decision-backdrop" role="presentation">
-          <section className="decision-dialog" role="dialog" aria-modal="true" aria-labelledby="discard-title">
+          <section
+            className="decision-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discard-title"
+          >
             <h2 id="discard-title">Unsaved changes</h2>
             <p>Save your changes before closing settings?</p>
             <div className="decision-dialog__actions">
-              <button type="button" className="quiet-button" onClick={() => setClosePrompt(false)}>Keep editing</button>
-              <button type="button" className="quiet-button" onClick={discardAndClose}>Discard</button>
-              <button type="button" className="primary-button" onClick={() => { setClosePrompt(false); void saveSettings(); }}>Save</button>
+              <button type="button" className="quiet-button" onClick={() => setClosePrompt(false)}>
+                Keep editing
+              </button>
+              <button type="button" className="quiet-button" onClick={discardAndClose}>
+                Discard
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  setClosePrompt(false);
+                  void saveSettings();
+                }}
+              >
+                Save
+              </button>
             </div>
           </section>
         </div>

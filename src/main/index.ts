@@ -12,21 +12,20 @@ import type {
   SettingsSnapshot,
 } from '../shared/types';
 import { IPC_CHANNELS } from '../shared/ipc';
-import { toElectronAccelerator } from '../shared/commands';
 import { resolveAppConfigFromEnvironment, withWorkspaceUrl } from './security/config';
 import { validateSettingsDraft } from './security/preferences-validation';
 import { createContentSession } from './security/session';
 import { createContentView, type ContentViewController } from './window/content-view';
-import { createMainWindow, installApplicationMenu, loadLocalShell } from './window/create-main-window';
+import {
+  createMainWindow,
+  installApplicationMenu,
+  loadLocalShell,
+} from './window/create-main-window';
 import {
   createSettingsWindow,
   type SettingsWindowController,
 } from './window/create-settings-window';
-import {
-  emitContentState,
-  emitContentZoom,
-  registerIpcHandlers,
-} from './ipc/handlers';
+import { emitContentState, emitContentZoom, registerIpcHandlers } from './ipc/handlers';
 import { registerSettingsIpcHandlers } from './ipc/settings-handlers';
 import { installApplicationShortcuts, installShortcutHandler } from './shortcuts/shortcuts';
 import { createWindowPresentationController } from './window/fullscreen';
@@ -39,6 +38,7 @@ import {
 } from './commands/command-registry';
 import { collectGpuDiagnostics } from './gpu/diagnostics';
 import { installShellContentSecurityPolicy } from './security/csp';
+import { buildApplicationContextMenuTemplate } from './window/context-menu';
 
 let mainWindow: BrowserWindow | null = null;
 let contentView: ContentViewController | null = null;
@@ -83,11 +83,7 @@ async function createApplicationWindow(): Promise<void> {
     }
   }
 
-  const restoredResult = restoreWindowState(
-    preferences.window,
-    displays,
-    primaryDisplay,
-  );
+  const restoredResult = restoreWindowState(preferences.window, displays, primaryDisplay);
   const restoredState: RestoredWindowState = restoredResult.success
     ? restoredResult.value
     : fallbackWindow;
@@ -156,7 +152,7 @@ async function createApplicationWindow(): Promise<void> {
         return;
       case 'devtools.open':
         if (
-          environmentConfig.mode === 'development' &&
+          environmentConfig.mode !== 'production' &&
           environmentConfig.development.enableDevTools
         ) {
           contentView?.webContents.openDevTools({ mode: 'detach' });
@@ -165,6 +161,7 @@ async function createApplicationWindow(): Promise<void> {
       case 'palette.open':
       case 'shell.about':
       case 'shell.gpuDiagnostics':
+        contentView?.setOverlayVisible(true);
         currentWindow?.webContents.send(IPC_CHANNELS.commandPaletteOpen);
         return;
     }
@@ -178,26 +175,15 @@ async function createApplicationWindow(): Promise<void> {
     if (currentWindow === null || commandRegistry === undefined) {
       return;
     }
-    const settingsAccelerator = toElectronAccelerator(
-      commandRegistry.getBinding('settings.open'),
-      process.platform === 'darwin' ? 'darwin' : 'win32',
-    );
-    const template: Electron.MenuItemConstructorOptions[] = [
-      {
-        label: 'Settings…',
-        ...(settingsAccelerator === undefined ? {} : { accelerator: settingsAccelerator }),
-        click: () => executeCommand('settings.open'),
-      },
-    ];
-    if (
-      environmentConfig.mode === 'development' &&
-      environmentConfig.development.enableDevTools
-    ) {
-      template.push({
-        label: 'Inspect Element',
-        click: () => targetContents.inspectElement(params.x, params.y),
-      });
-    }
+    const template = buildApplicationContextMenuTemplate({
+      registry: commandRegistry,
+      platform: process.platform === 'darwin' ? 'darwin' : 'win32',
+      production: environmentConfig.mode === 'production',
+      enableDevTools: environmentConfig.development.enableDevTools,
+      targetContents,
+      params,
+      executeCommand,
+    });
     Menu.buildFromTemplate(template).popup({ window: currentWindow, x: params.x, y: params.y });
   };
 
@@ -215,7 +201,10 @@ async function createApplicationWindow(): Promise<void> {
       commandRegistry,
       {
         executeCommand,
-        dismissOverlays: () => currentWindow.webContents.send(IPC_CHANNELS.commandPaletteClose),
+        dismissOverlays: () => {
+          contentView?.setOverlayVisible(false);
+          currentWindow.webContents.send(IPC_CHANNELS.commandPaletteClose);
+        },
       },
     );
   }
@@ -333,7 +322,7 @@ async function createApplicationWindow(): Promise<void> {
         .filter(
           (command) =>
             !command.devOnly ||
-            (environmentConfig.mode === 'development' &&
+            (environmentConfig.mode !== 'production' &&
               environmentConfig.development.enableDevTools),
         ),
       shortcutOverrides: registry.getOverrides(),
@@ -387,6 +376,17 @@ async function createApplicationWindow(): Promise<void> {
     },
     setContentBounds: (bounds) => contentView?.setBounds(bounds),
     getGpuDiagnostics: collectGpuDiagnostics,
+    getCommandSummaries: () =>
+      registry
+        .getSummaries()
+        .filter(
+          (command) =>
+            !command.devOnly ||
+            (environmentConfig.mode !== 'production' &&
+              environmentConfig.development.enableDevTools),
+        ),
+    executeCommand,
+    setOverlayVisible: (visible) => contentView?.setOverlayVisible(visible),
   });
 
   removeSettingsIpcHandlers = registerSettingsIpcHandlers({
@@ -426,7 +426,9 @@ async function createApplicationWindow(): Promise<void> {
     }
     void preferencesStore
       .update({ window: { ...lastWindowedBounds, maximized } })
-      .catch((error: unknown) => logger.warn('Failed to persist application preferences', { error }));
+      .catch((error: unknown) =>
+        logger.warn('Failed to persist application preferences', { error }),
+      );
   };
   const schedulePersistWindowState = (updateWindowedBounds: boolean): void => {
     setImmediate(() => persistWindowState(updateWindowedBounds));

@@ -276,10 +276,12 @@ export function resolveAppConfigFromEnvironment(
   const mode = resolveRuntimeMode(environment);
   const configuredUrl = environment.APP_CONTENT_URL;
   const initialUrl =
-    configuredUrl !== undefined && configuredUrl.length > 0
-      ? configuredUrl
-      : mode === 'test'
+    configuredUrl === undefined
+      ? mode === 'test'
         ? TEST_DEFAULT_URL
+        : undefined
+      : configuredUrl.length > 0
+        ? configuredUrl
         : undefined;
   let initialOrigin: string;
   if (initialUrl === undefined) {

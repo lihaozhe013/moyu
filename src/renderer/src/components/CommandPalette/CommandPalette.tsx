@@ -1,17 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  formatShortcutBinding,
+  type CommandSummary,
+  type SupportedPlatform,
+} from '../../../../shared/commands';
+import type { CommandId } from '../../../../shared/types';
 
 interface CommandPaletteProps {
   readonly open: boolean;
-  readonly onClose: () => void;
-  readonly onSubmit: (query: string) => void;
-  readonly commands: readonly string[];
+  readonly onSubmit: (commandId: CommandId) => void;
+  readonly commands: readonly CommandSummary[];
+  readonly platform: SupportedPlatform;
 }
 
 export function CommandPalette({
   open,
-  onClose,
   onSubmit,
   commands,
+  platform,
 }: CommandPaletteProps): React.JSX.Element | null {
   const [query, setQuery] = useState('');
 
@@ -21,24 +27,38 @@ export function CommandPalette({
     }
   }, [open]);
 
+  const visibleCommands = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (normalized.length === 0) return commands;
+    return commands.filter((command) =>
+      `${command.label} ${command.description} ${command.id}`.toLowerCase().includes(normalized),
+    );
+  }, [commands, query]);
+
   if (!open) {
     return null;
   }
 
+  const submit = (): void => {
+    const selected = visibleCommands[0];
+    if (selected !== undefined) {
+      onSubmit(selected.id);
+    }
+  };
+
   return (
-    <div className="command-palette-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="command-palette-backdrop" role="presentation">
       <section
         className="command-palette"
         role="dialog"
         aria-modal="true"
         aria-labelledby="command-palette-title"
-        onMouseDown={(event) => event.stopPropagation()}
       >
-        <h2 id="command-palette-title">Open location or command</h2>
+        <h2 id="command-palette-title">Command Palette</h2>
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            onSubmit(query);
+            submit();
           }}
         >
           <div className="command-palette__input-row">
@@ -46,7 +66,7 @@ export function CommandPalette({
             <input
               autoFocus
               type="text"
-              placeholder="Type a command"
+              placeholder="Search commands"
               aria-label="Command"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -54,18 +74,22 @@ export function CommandPalette({
           </div>
         </form>
         <div className="command-palette__commands" aria-label="Available commands">
-          {commands.map((command) => (
+          {visibleCommands.map((command) => (
             <button
               type="button"
               className="command-palette__command"
-              key={command}
-              onClick={() => onSubmit(command)}
+              key={command.id}
+              onClick={() => onSubmit(command.id)}
             >
-              {command}
+              <span>{command.label}</span>
+              <code>{formatShortcutBinding(command.binding, platform)}</code>
             </button>
           ))}
+          {visibleCommands.length === 0 ? (
+            <p className="command-palette__empty">No matching commands</p>
+          ) : null}
         </div>
-        <p className="command-palette__hint">Esc to close</p>
+        <p className="command-palette__hint">Enter to run · Escape to close</p>
       </section>
     </div>
   );

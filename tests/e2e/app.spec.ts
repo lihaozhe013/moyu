@@ -8,6 +8,12 @@ const fixtureOrigin = 'http://127.0.0.1:4311';
 const fixtureUrl = `${fixtureOrigin}/`;
 const mainEntry = resolve('out/main/index.js');
 
+const primaryModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+
+function primaryShortcut(key: string): string {
+  return `${primaryModifier}+${key}`;
+}
+
 let application: Awaited<ReturnType<typeof electron.launch>> | undefined;
 let userDataPath: string | undefined;
 
@@ -17,7 +23,9 @@ async function readContentSnapshot(): Promise<{ url: string; bounds: Record<stri
   }
 
   return application.evaluate(({ BrowserWindow }) => {
-    const window = BrowserWindow.getAllWindows()[0];
+    const window = BrowserWindow.getAllWindows().find((candidate) =>
+      candidate.webContents.getURL().includes('/renderer/index.html'),
+    );
     const child = window?.contentView.children[0] as
       | { webContents?: { getURL: () => string }; getBounds?: () => Record<string, number> }
       | undefined;
@@ -34,7 +42,9 @@ async function navigateContent(url: string): Promise<void> {
   }
 
   await application.evaluate(({ BrowserWindow }, targetUrl) => {
-    const window = BrowserWindow.getAllWindows()[0];
+    const window = BrowserWindow.getAllWindows().find((candidate) =>
+      candidate.webContents.getURL().includes('/renderer/index.html'),
+    );
     const child = window?.contentView.children[0] as {
       webContents?: { loadURL: (nextUrl: string) => Promise<unknown> };
     };
@@ -51,7 +61,9 @@ async function executeContent(script: string): Promise<unknown> {
   }
 
   return application.evaluate(({ BrowserWindow }, source) => {
-    const window = BrowserWindow.getAllWindows()[0];
+    const window = BrowserWindow.getAllWindows().find((candidate) =>
+      candidate.webContents.getURL().includes('/renderer/index.html'),
+    );
     const child = window?.contentView.children[0] as {
       webContents?: { executeJavaScript: (code: string) => Promise<unknown> };
     };
@@ -62,7 +74,7 @@ async function executeContent(script: string): Promise<unknown> {
   }, script);
 }
 
-async function launchApplication(initialUrl = fixtureUrl): Promise<void> {
+async function launchApplication(initialUrl = fixtureUrl, enableDevTools = false): Promise<void> {
   userDataPath = await mkdtemp(join(tmpdir(), 'professional-canvas-e2e-'));
   application = await electron.launch({
     args: [mainEntry, `--user-data-dir=${userDataPath}`],
@@ -72,7 +84,7 @@ async function launchApplication(initialUrl = fixtureUrl): Promise<void> {
       APP_CONTENT_URL: initialUrl,
       APP_ALLOWED_ORIGINS: fixtureOrigin,
       APP_AUTHENTICATION_ORIGINS: '',
-      APP_ENABLE_DEVTOOLS: 'false',
+      APP_ENABLE_DEVTOOLS: enableDevTools ? 'true' : 'false',
       APP_ALLOW_ARBITRARY_NAVIGATION: 'false',
       APP_PERSIST_SESSION: 'false',
       APP_SESSION_NAME: 'e2e',
@@ -91,15 +103,15 @@ test.afterEach(async () => {
   }
 });
 
-test('launches a local shell with one ready content surface and no browser chrome', async () => {
+test('launches a frameless keyboard-first shell with one ready content surface', async () => {
   await launchApplication();
   const shell = await application!.firstWindow();
 
-  await expect(shell.locator('.titlebar')).toBeVisible();
-  await expect(shell.locator('.menubar')).toBeVisible();
-  await expect(shell.locator('.toolrail')).toBeVisible();
-  await expect(shell.locator('.inspector')).toBeVisible();
-  await expect(shell.locator('.statusbar')).toBeVisible();
+  await expect(shell.locator('.drag-region')).toBeVisible();
+  await expect(shell.locator('.titlebar, .menubar, .toolrail, .inspector, .statusbar')).toHaveCount(
+    0,
+  );
+  await expect(shell.locator('.window-control')).toHaveCount(0);
   await expect(shell.locator('.content-host')).toBeVisible();
   await expect(shell.locator('.loading-overlay')).toBeHidden({ timeout: 15_000 });
   await expect(shell.locator('.error-overlay')).toHaveCount(0);
@@ -113,7 +125,7 @@ test('opens and closes the command palette through the application shortcut', as
   await launchApplication();
   const shell = await application!.firstWindow();
 
-  await shell.keyboard.press('Control+Shift+L');
+  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toBeVisible();
@@ -121,6 +133,92 @@ test('opens and closes the command palette through the application shortcut', as
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toHaveCount(0);
+});
+
+test('opens one modeless settings window and applies a URL without closing it', async () => {
+  await launchApplication();
+  const shell = await application!.firstWindow();
+
+  await shell.keyboard.press(primaryShortcut(','));
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'));
+  expect(settings).toBeDefined();
+  await settings!.waitForSelector('.settings-window');
+
+  await shell.keyboard.press(primaryShortcut(','));
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+
+  await settings!.locator('#workspace-url').fill(`${fixtureOrigin}/popup`);
+  await settings!.keyboard.press(primaryShortcut('S'));
+  await expect(settings!.locator('.settings-footer__status')).toContainText('Saved');
+  await expect.poll(async () => (await readContentSnapshot()).url).toBe(`${fixtureOrigin}/popup`);
+  await expect(settings!.locator('.settings-window')).toBeVisible();
+});
+
+test('opens settings automatically when no workspace URL is configured', async () => {
+  await launchApplication('');
+  const shell = await application!.firstWindow();
+  await expect(shell.locator('.empty-workspace')).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'));
+  expect(settings).toBeDefined();
+  await settings!.waitForSelector('.settings-window');
+  await expect(settings!.locator('#workspace-url')).toHaveValue('');
+  await expect(settings!.locator('#workspace-url')).toBeFocused();
+});
+
+test('records a shortcut from the keyboard and persists the edited draft', async () => {
+  await launchApplication();
+  const shell = await application!.firstWindow();
+  await shell.keyboard.press(primaryShortcut(','));
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'))!;
+  await settings.waitForSelector('.settings-window');
+  await settings.locator('#shortcut-search').fill('Reload Workspace');
+  const row = settings.locator('.shortcut-row').filter({ hasText: 'Reload Workspace' }).first();
+  const record = row.getByRole('button', { name: 'Record' });
+  await record.focus();
+  await record.press('Enter');
+  await settings.locator('.settings-window').press('Alt+Shift+K');
+  await expect(row.locator('.shortcut-key')).toContainText(
+    process.platform === 'darwin' ? '⌥⇧K' : 'Alt+Shift+K',
+  );
+  await settings.keyboard.press(primaryShortcut('S'));
+  await expect(settings.locator('.settings-footer__status')).toContainText('Saved');
 });
 
 test('blocks a denied redirect and keeps the current trusted workspace', async () => {
@@ -239,15 +337,42 @@ test('reloads content and keeps zoom within the approved steps', async () => {
     .toBe('undefined');
 
   await shell.evaluate(() => window.desktopAPI?.content.setZoomFactor(1.1));
-  await expect(shell.locator('.statusbar')).toContainText('110%');
+  await expect
+    .poll(async () =>
+      application!.evaluate(({ BrowserWindow }) =>
+        (
+          BrowserWindow.getAllWindows()[0]?.contentView.children[0] as
+            { webContents?: { getZoomFactor: () => number } } | undefined
+        )?.webContents?.getZoomFactor(),
+      ),
+    )
+    .toBe(1.1);
   await shell.evaluate(() => window.desktopAPI?.content.setZoomFactor(0.9));
-  await expect(shell.locator('.statusbar')).toContainText('90%');
+  await expect
+    .poll(async () =>
+      application!.evaluate(({ BrowserWindow }) =>
+        (
+          BrowserWindow.getAllWindows()[0]?.contentView.children[0] as
+            { webContents?: { getZoomFactor: () => number } } | undefined
+        )?.webContents?.getZoomFactor(),
+      ),
+    )
+    .toBe(0.9);
   await shell.evaluate(() => window.desktopAPI?.content.setZoomFactor(1));
-  await expect(shell.locator('.statusbar')).toContainText('100%');
+  await expect
+    .poll(async () =>
+      application!.evaluate(({ BrowserWindow }) =>
+        (
+          BrowserWindow.getAllWindows()[0]?.contentView.children[0] as
+            { webContents?: { getZoomFactor: () => number } } | undefined
+        )?.webContents?.getZoomFactor(),
+      ),
+    )
+    .toBe(1);
 });
 
 test('reports WebGL capability and exposes only non-sensitive GPU diagnostics to the shell', async () => {
-  await launchApplication();
+  await launchApplication(fixtureUrl, true);
   const shell = await application!.firstWindow();
 
   await navigateContent(`${fixtureOrigin}/webgl`);
@@ -268,21 +393,21 @@ test('reports WebGL capability and exposes only non-sensitive GPU diagnostics to
   });
   expect(Array.isArray(diagnostics?.scaleFactors)).toBe(true);
 
-  await shell.keyboard.press('Control+Shift+L');
+  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
   await shell.getByRole('textbox', { name: 'Command' }).fill('gpu');
   await shell.getByRole('textbox', { name: 'Command' }).press('Enter');
   await expect(shell.locator('#gpu-title')).toBeVisible();
   await expect(shell.locator('.gpu-dialog')).toContainText('WebGL');
 });
 
-test('renders the local error overlay and recovers with Retry', async () => {
+test('renders the local error overlay and recovers with the reload shortcut', async () => {
   await launchApplication(`${fixtureOrigin}/error`);
   const shell = await application!.firstWindow();
 
   await expect(shell.locator('.error-overlay')).toBeVisible({ timeout: 15_000 });
   await expect(shell.locator('.error-overlay')).toContainText('Unable to load workspace');
 
-  await shell.getByRole('button', { name: 'Retry' }).click();
+  await shell.keyboard.press(primaryShortcut('R'));
   await expect(shell.locator('.error-overlay')).toHaveCount(0, { timeout: 15_000 });
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(`${fixtureOrigin}/error`);
 });
@@ -303,7 +428,7 @@ test('keeps the shell alive after a content renderer crash and reloads it', asyn
 
   await expect(shell.locator('.error-overlay')).toBeVisible({ timeout: 15_000 });
   await expect(shell.locator('.error-overlay')).toContainText('stopped unexpectedly');
-  await shell.getByRole('button', { name: 'Retry' }).click();
+  await shell.keyboard.press(primaryShortcut('R'));
   await expect(shell.locator('.error-overlay')).toHaveCount(0, { timeout: 15_000 });
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
 });

@@ -85,7 +85,7 @@ export function installShortcutHandler(
     const commandId = registry.match(
       toShortcutInput(input),
       surface,
-      config.mode === 'development' && config.development.enableDevTools,
+      config.mode !== 'production' && config.development.enableDevTools,
     );
     if (commandId === undefined) {
       return;
@@ -121,7 +121,14 @@ export function installApplicationShortcuts(
   const removeContentHandler =
     contentContents === null
       ? () => undefined
-      : installShortcutHandler(contentContents, shellContents, registry, config, 'workspace', actions);
+      : installShortcutHandler(
+          contentContents,
+          shellContents,
+          registry,
+          config,
+          'workspace',
+          actions,
+        );
   return () => {
     removeShellHandler();
     removeContentHandler();

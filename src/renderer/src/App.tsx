@@ -1,70 +1,41 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ContentStatus, GpuDiagnostics } from '../../shared/types';
+import {
+  createCommandDefinitions,
+  shortcutBindingMatchesInput,
+  type CommandSummary,
+  type ShortcutInput,
+  type SupportedPlatform,
+} from '../../shared/commands';
+import type { CommandId, ContentStatus, GpuDiagnostics } from '../../shared/types';
 import { CommandPalette } from './components/CommandPalette/CommandPalette';
 import { ErrorOverlay } from './components/ErrorOverlay/ErrorOverlay';
-import { Inspector } from './components/Inspector/Inspector';
 import { LoadingOverlay } from './components/LoadingOverlay/LoadingOverlay';
-import { MenuBar } from './components/MenuBar/MenuBar';
-import { StatusBar } from './components/StatusBar/StatusBar';
-import { TitleBar } from './components/TitleBar/TitleBar';
-import { ToolRail } from './components/ToolRail/ToolRail';
+
+function platformForRenderer(): SupportedPlatform {
+  return navigator.platform.toLowerCase().includes('mac') ? 'darwin' : 'win32';
+}
 
 export default function App(): React.JSX.Element {
-  const [activeTool, setActiveTool] = useState('select');
+  const platform = platformForRenderer();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [gpuOpen, setGpuOpen] = useState(false);
   const [gpuDiagnostics, setGpuDiagnostics] = useState<GpuDiagnostics | null>(null);
   const [gpuError, setGpuError] = useState<string | null>(null);
-  const [zoomFactor, setZoomFactor] = useState(1);
-  const [contentStatus, setContentStatus] = useState<ContentStatus>({ type: 'loading' });
+  const [commands, setCommands] = useState<readonly CommandSummary[]>(() =>
+    createCommandDefinitions(platform).map((definition) => ({
+      id: definition.id,
+      label: definition.label,
+      description: definition.description,
+      scope: definition.scope,
+      customizable: definition.customizable,
+      devOnly: definition.devOnly,
+      defaultBinding: definition.defaultBinding,
+      binding: definition.defaultBinding,
+    })),
+  );
+  const [contentStatus, setContentStatus] = useState<ContentStatus>({ type: 'idle' });
   const contentHostRef = useRef<HTMLElement | null>(null);
-  const isMacPlatform = navigator.platform.toLowerCase().includes('mac');
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      const modifierPressed = event.metaKey || event.ctrlKey;
-      if (modifierPressed && event.shiftKey && event.key.toLowerCase() === 'l') {
-        event.preventDefault();
-        setPaletteOpen(true);
-      } else if (event.key === 'Escape') {
-        setPaletteOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const api = window.desktopAPI;
-    if (api === undefined) {
-      return;
-    }
-
-    let active = true;
-    void api.content
-      .getZoomFactor()
-      .then((factor) => {
-        if (active) {
-          setZoomFactor(factor);
-        }
-      })
-      .catch(() => undefined);
-    const removeZoomListener = api.content.onZoomChange((factor) => {
-      if (active) {
-        setZoomFactor(factor);
-      }
-    });
-    const removeOpenListener = api.commands.onPaletteOpen(() => setPaletteOpen(true));
-    const removeCloseListener = api.commands.onPaletteClose(() => setPaletteOpen(false));
-    return () => {
-      active = false;
-      removeZoomListener();
-      removeOpenListener();
-      removeCloseListener();
-    };
-  }, []);
 
   useEffect(() => {
     const api = window.desktopAPI;
@@ -74,51 +45,75 @@ export default function App(): React.JSX.Element {
     }
 
     let active = true;
-    void api.content
-      .getState()
-      .then((state) => {
-        if (active) {
-          setContentStatus(state.type === 'idle' ? { type: 'loading' } : state);
-        }
+    void api.commands
+      .getSummaries()
+      .then((summaries) => {
+        if (active) setCommands(summaries);
       })
-      .catch(() => {
-        if (active) {
-          setContentStatus({
-            type: 'error',
-            code: -1,
-            description: 'The workspace state could not be read.',
-          });
-        }
-      });
-
-    const removeListener = api.content.onStateChange((state) => {
-      if (active) {
-        setContentStatus(state);
-      }
+      .catch(() => undefined);
+    const removeOpenListener = api.commands.onPaletteOpen(() => {
+      setPaletteOpen(true);
+      void api.commands
+        .getSummaries()
+        .then((summaries) => setCommands(summaries))
+        .catch(() => undefined);
+    });
+    const removeCloseListener = api.commands.onPaletteClose(() => {
+      setPaletteOpen(false);
+      setAboutOpen(false);
+      setGpuOpen(false);
     });
     return () => {
       active = false;
-      removeListener();
+      removeOpenListener();
+      removeCloseListener();
     };
+  }, []);
+
+  useEffect(() => {
+    const api = window.desktopAPI;
+    if (api === undefined) return;
+    void api.content
+      .getState()
+      .then((state) => setContentStatus(state))
+      .catch(() =>
+        setContentStatus({
+          type: 'error',
+          code: -1,
+          description: 'The workspace state could not be read.',
+        }),
+      );
+    return api.content.onStateChange(setContentStatus);
+  }, []);
+
+  useEffect(() => {
+    const api = window.desktopAPI;
+    if (api === undefined) return;
+    void api.commands.setOverlayVisible(paletteOpen || aboutOpen || gpuOpen).catch(() => undefined);
+  }, [aboutOpen, gpuOpen, paletteOpen]);
+
+  useEffect(() => {
+    const api = window.desktopAPI;
+    if (api === undefined) return;
+    const closeOverlays = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setPaletteOpen(false);
+        setAboutOpen(false);
+        setGpuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', closeOverlays);
+    return () => window.removeEventListener('keydown', closeOverlays);
   }, []);
 
   useLayoutEffect(() => {
     const api = window.desktopAPI;
     const element = contentHostRef.current;
-    if (api === undefined || element === null) {
-      return;
-    }
+    if (api === undefined || element === null) return;
 
     let animationFrame: number | undefined;
     let previousBounds:
-      | {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-          devicePixelRatio: number;
-        }
-      | undefined;
+      { x: number; y: number; width: number; height: number; devicePixelRatio: number } | undefined;
     const reportBounds = (): void => {
       animationFrame = undefined;
       const rectangle = element.getBoundingClientRect();
@@ -143,133 +138,140 @@ export default function App(): React.JSX.Element {
       void api.layout.setContentBounds(nextBounds).catch(() => undefined);
     };
     const scheduleReport = (): void => {
-      if (animationFrame === undefined) {
-        animationFrame = requestAnimationFrame(reportBounds);
-      }
+      if (animationFrame === undefined) animationFrame = requestAnimationFrame(reportBounds);
     };
     const observer = new ResizeObserver(scheduleReport);
     observer.observe(element);
     window.visualViewport?.addEventListener('resize', scheduleReport);
     scheduleReport();
-
     return () => {
       observer.disconnect();
       window.visualViewport?.removeEventListener('resize', scheduleReport);
-      if (animationFrame !== undefined) {
-        cancelAnimationFrame(animationFrame);
-      }
+      if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
     };
   }, []);
 
-  const retryContent = (): void => {
-    const reload = window.desktopAPI?.content.reload;
-    if (reload !== undefined) {
-      void reload().catch(() => undefined);
-    }
-  };
-
-  const handleCommand = (query: string): void => {
-    const command = query.trim().toLowerCase();
+  const handleCommand = (commandId: CommandId): void => {
     setPaletteOpen(false);
-    if (command === 'about') {
+    if (commandId === 'shell.about') {
       setGpuOpen(false);
       setAboutOpen(true);
       return;
     }
-    if (command === 'gpu') {
+    if (commandId === 'shell.gpuDiagnostics') {
       setAboutOpen(false);
       setGpuOpen(true);
       setGpuDiagnostics(null);
       setGpuError(null);
       const getDiagnostics = window.desktopAPI?.diagnostics.getGpuDiagnostics;
-      if (getDiagnostics !== undefined) {
-        void getDiagnostics()
-          .then((diagnostics) => setGpuDiagnostics(diagnostics))
-          .catch(() => setGpuError('GPU diagnostics are unavailable.'));
-      } else {
+      if (getDiagnostics === undefined) {
         setGpuError('GPU diagnostics are unavailable.');
+      } else {
+        void getDiagnostics()
+          .then(setGpuDiagnostics)
+          .catch(() => setGpuError('GPU diagnostics are unavailable.'));
       }
       return;
     }
-    if (command === 'workspace' || command === 'reload') {
-      const reload = window.desktopAPI?.content.reload;
-      if (reload !== undefined) {
-        void reload().catch(() => undefined);
-      }
-    }
+    void window.desktopAPI?.commands.execute(commandId).catch(() => undefined);
   };
 
-  const showLoading = contentStatus.type === 'loading' || contentStatus.type === 'idle';
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setPaletteOpen(false);
+        setAboutOpen(false);
+        setGpuOpen(false);
+        return;
+      }
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      const input: ShortcutInput = {
+        code: event.code,
+        alt: event.altKey,
+        control: event.ctrlKey,
+        meta: event.metaKey,
+        shift: event.shiftKey,
+      };
+      const command = commands.find(
+        (candidate) =>
+          candidate.binding !== undefined && shortcutBindingMatchesInput(candidate.binding, input),
+      );
+      if (command === undefined) return;
+      event.preventDefault();
+      if (command.id === 'palette.open') {
+        setPaletteOpen(true);
+      } else {
+        handleCommand(command.id);
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [commands]);
+
+  const showLoading = contentStatus.type === 'loading';
   const showError = contentStatus.type === 'error' || contentStatus.type === 'crashed';
 
   return (
-    <div className={`app-shell${isMacPlatform ? ' app-shell--mac' : ''}`}>
-      <TitleBar />
-      <MenuBar />
-      <div className="workspace-frame">
-        <ToolRail activeTool={activeTool} onToolChange={setActiveTool} />
-        <main
-          className="content-host"
-          aria-label="Workspace content"
-          data-content-status={contentStatus.type}
-          ref={contentHostRef}
-        >
-          {contentStatus.type === 'ready' ? null : (
-            <div className="content-skeleton" aria-hidden="true">
-              <div className="content-skeleton__topline" />
-              <div className="content-skeleton__canvas" />
-            </div>
-          )}
-          {showLoading ? <LoadingOverlay /> : null}
-          {showError && contentStatus.type === 'crashed' ? (
-            <ErrorOverlay
-              onRetry={retryContent}
-              title="Workspace stopped unexpectedly"
-              description="The workspace renderer stopped. Reload the workspace to continue."
-            />
-          ) : null}
-          {showError && contentStatus.type === 'error' ? (
-            <ErrorOverlay
-              onRetry={retryContent}
-              description={contentStatus.description}
-              errorCode={contentStatus.code}
-            />
-          ) : null}
-        </main>
-        <Inspector activeTool={activeTool} />
-      </div>
-      <StatusBar activeTool={activeTool} zoomFactor={zoomFactor} />
+    <div className="app-shell">
+      <div className="drag-region" aria-hidden="true" />
+      <main
+        className="content-host"
+        aria-label="Workspace content"
+        data-content-status={contentStatus.type}
+        ref={contentHostRef}
+      >
+        {contentStatus.type === 'ready' || contentStatus.type === 'idle' ? null : (
+          <div className="content-skeleton" aria-hidden="true">
+            <div className="content-skeleton__topline" />
+            <div className="content-skeleton__canvas" />
+          </div>
+        )}
+        {contentStatus.type === 'idle' ? (
+          <div className="empty-workspace" role="status">
+            <strong>No workspace configured</strong>
+            <span>Open Settings with the configured shortcut to add a workspace URL.</span>
+          </div>
+        ) : null}
+        {showLoading ? <LoadingOverlay /> : null}
+        {showError && contentStatus.type === 'crashed' ? (
+          <ErrorOverlay
+            title="Workspace stopped unexpectedly"
+            description="The workspace renderer stopped. Use the Reload Workspace shortcut to continue."
+          />
+        ) : null}
+        {showError && contentStatus.type === 'error' ? (
+          <ErrorOverlay description={contentStatus.description} errorCode={contentStatus.code} />
+        ) : null}
+      </main>
       <CommandPalette
         open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
         onSubmit={handleCommand}
-        commands={['workspace', 'reload', 'gpu', 'about']}
+        commands={commands}
+        platform={platform}
       />
       {aboutOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setAboutOpen(false)}>
+        <div className="modal-backdrop" role="presentation">
           <section
             className="about-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="about-title"
-            onMouseDown={(event) => event.stopPropagation()}
           >
             <h2 id="about-title">Professional Canvas</h2>
             <p>Focused desktop workspace shell.</p>
-            <button type="button" onClick={() => setAboutOpen(false)}>
-              Close
-            </button>
+            <span>Press Escape to close.</span>
           </section>
         </div>
       ) : null}
       {gpuOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setGpuOpen(false)}>
+        <div className="modal-backdrop" role="presentation">
           <section
             className="about-dialog gpu-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="gpu-title"
-            onMouseDown={(event) => event.stopPropagation()}
           >
             <h2 id="gpu-title">GPU diagnostics</h2>
             {gpuDiagnostics === null && gpuError === null ? (
@@ -302,9 +304,7 @@ export default function App(): React.JSX.Element {
               </dl>
             ) : null}
             {gpuError !== null ? <p role="alert">{gpuError}</p> : null}
-            <button type="button" onClick={() => setGpuOpen(false)}>
-              Close
-            </button>
+            <span>Press Escape to close.</span>
           </section>
         </div>
       ) : null}
