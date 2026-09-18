@@ -11,12 +11,14 @@ files:
 asar: true
 icon: build/icon
 mac:
+  artifactName: Professional-Canvas-mac-${arch}-${version}.${ext}
   category: public.app-category.graphics-design
   hardenedRuntime: true
   target:
     - dmg
     - zip
 win:
+  executableName: professional-canvas
   target:
     - target: nsis
       arch:
@@ -24,8 +26,16 @@ win:
     - target: portable
       arch:
         - x64
-  artifactName: Professional-Canvas-${version}-${arch}.${ext}
+  artifactName: Professional-Canvas-win-${arch}-${version}.${ext}
 nsis:
+  artifactName: Professional-Canvas-win-${arch}-${version}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  perMachine: false
+portable:
+  artifactName: Professional-Canvas-win-${arch}-${version}-portable.${ext}
+dmg:
+  artifactName: Professional-Canvas-mac-${arch}-${version}.${ext}
 publish: null

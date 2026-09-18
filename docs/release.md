@@ -57,7 +57,8 @@ pnpm test
 pnpm build
 ```
 
-Applicable jobs then run `pnpm test:e2e`, `pnpm package:win`, or `pnpm package:mac`.
+Applicable jobs then run `pnpm test:e2e`, `pnpm build:win:x64`, or
+`pnpm build:mac:arm64`.
 
 ## CI matrix
 
@@ -83,12 +84,12 @@ Packaging metadata must define:
 - platform icon assets (`.ico`, `.icns`, and source PNG as appropriate);
 - included compiled shell and runtime resources;
 - excluded source maps or diagnostics according to the release policy;
-- Windows installer/portable artifact choices;
-- macOS DMG or other approved artifact choices;
+- Windows NSIS installer artifact choices;
+- macOS DMG artifact choices;
 - architecture targets; and
 - signing/notarization hooks driven by CI secrets.
 
-The checked-in [`../electron-builder.yml`](../electron-builder.yml) defines the provisional application identifier, product metadata, asar inclusion set, Windows NSIS/portable targets, and macOS DMG/zip targets for arm64 and x64. The `build/` directory contains a neutral geometric placeholder icon set that must be replaced by approved product branding before signing. The manually triggered [`../.github/workflows/package.yml`](../.github/workflows/package.yml) intentionally produces unsigned artifacts with certificate auto-discovery disabled so they cannot be mistaken for signed releases.
+The checked-in [`../electron-builder.yml`](../electron-builder.yml) defines the provisional application identifier, product metadata, asar inclusion set, Windows NSIS/portable targets, and macOS DMG/zip targets. The `build:*` scripts select the release-facing NSIS and DMG targets directly, matching the target-specific artifact naming pattern used by MarkText. The `build/` directory contains a neutral geometric placeholder icon set that must be replaced by approved product branding before signing. The [`../.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) builds unsigned platform artifacts and publishes the `nightly` prerelease only for pushes to the `publish` branch.
 
 Generic Electron branding, default icons, development URLs, test fixtures, and unnecessary source files must not leak into production artifacts.
 

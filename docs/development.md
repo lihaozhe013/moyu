@@ -19,9 +19,9 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm test:e2e
+pnpm build:mac:arm64
+pnpm build:win:x64
 pnpm package
-pnpm package:win
-pnpm package:mac
 ```
 
 Before handoff, run typecheck, lint, unit tests, and build. Cross-process or UI

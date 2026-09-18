@@ -79,12 +79,16 @@ pnpm lint
 pnpm test
 pnpm build
 pnpm test:e2e
+pnpm build:mac:arm64
+pnpm build:win:x64
 pnpm package
 ```
 
-`pnpm package:win` and `pnpm package:mac` select platform targets. Unsigned
-artifacts are development outputs until product signing and notarization
-credentials are available.
+`pnpm package:win` and `pnpm package:mac` remain compatibility aliases for the
+platform-specific build scripts. The macOS script produces a DMG and the
+Windows script produces an x64 NSIS EXE installer. Unsigned artifacts are
+development outputs until product signing and notarization credentials are
+available. Pushing to `publish` runs the nightly platform workflow.
 
 ## Environment
 
