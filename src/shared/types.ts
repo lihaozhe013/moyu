@@ -2,6 +2,31 @@ export type AppMode = 'development' | 'production' | 'test';
 
 export type WindowPresentation = 'windowed' | 'maximized' | 'fullscreen';
 
+export type ShortcutModifier = 'alt' | 'control' | 'meta' | 'shift';
+
+export interface ShortcutBinding {
+  readonly code: string;
+  readonly modifiers: readonly ShortcutModifier[];
+}
+
+export type CommandId =
+  | 'settings.open'
+  | 'settings.save'
+  | 'palette.open'
+  | 'window.minimize'
+  | 'window.toggleMaximize'
+  | 'window.close'
+  | 'app.quit'
+  | 'window.toggleFullscreen'
+  | 'content.reload'
+  | 'content.hardReload'
+  | 'content.zoomReset'
+  | 'content.zoomIn'
+  | 'content.zoomOut'
+  | 'shell.about'
+  | 'shell.gpuDiagnostics'
+  | 'devtools.open';
+
 export type ContentStatus =
   | { type: 'idle' }
   | { type: 'loading' }
@@ -53,6 +78,13 @@ export interface PersistedWindowState {
   readonly x?: number;
   readonly y?: number;
   readonly maximized: boolean;
+}
+
+export interface AppPreferencesV1 {
+  readonly version: 1;
+  readonly workspaceUrl?: string;
+  readonly shortcuts: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
+  readonly window: PersistedWindowState;
 }
 
 export interface RestoredWindowState {
