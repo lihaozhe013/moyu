@@ -16,7 +16,7 @@ afterEach(async () => {
 
 describe('window state store', () => {
   it('round-trips validated state through an atomic file write', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'professional-canvas-state-'));
+    const directory = await mkdtemp(join(tmpdir(), 'moyu-state-'));
     temporaryDirectories.push(directory);
     const store = createWindowStateStore(directory);
     const state = { width: 1600, height: 1000, x: 20, y: 40, maximized: false } as const;
@@ -28,7 +28,7 @@ describe('window state store', () => {
   });
 
   it('ignores malformed persisted state', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'professional-canvas-state-'));
+    const directory = await mkdtemp(join(tmpdir(), 'moyu-state-'));
     temporaryDirectories.push(directory);
     const store = createWindowStateStore(directory);
 

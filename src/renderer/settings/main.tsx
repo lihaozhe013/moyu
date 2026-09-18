@@ -224,7 +224,7 @@ function SettingsApp(): React.JSX.Element {
     <main className="settings-window" onKeyDown={handleKeyDown} tabIndex={-1}>
       <header className="settings-header">
         <div>
-          <p className="settings-eyebrow">PROFESSIONAL CANVAS</p>
+          <p className="settings-eyebrow">MOYU</p>
           <h1>Settings</h1>
           <p className="settings-subtitle">Configure the workspace and keyboard-first controls.</p>
         </div>

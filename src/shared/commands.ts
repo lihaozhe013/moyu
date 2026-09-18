@@ -220,7 +220,7 @@ export function createCommandDefinitions(
     },
     {
       id: 'shell.about',
-      label: 'About Professional Canvas',
+      label: 'About moyu',
       description: 'Show application information.',
       scope: 'application',
       activation: 'press',

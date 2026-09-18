@@ -260,7 +260,7 @@ export default function App(): React.JSX.Element {
             aria-modal="true"
             aria-labelledby="about-title"
           >
-            <h2 id="about-title">Professional Canvas</h2>
+            <h2 id="about-title">moyu</h2>
             <p>Focused desktop workspace shell.</p>
             <span>Press Escape to close.</span>
           </section>

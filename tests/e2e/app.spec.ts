@@ -252,7 +252,7 @@ async function launchApplication(
   enableDevTools = false,
   runtimeMode: 'test' | 'production' = 'test',
 ): Promise<void> {
-  userDataPath = await mkdtemp(join(tmpdir(), 'professional-canvas-e2e-'));
+  userDataPath = await mkdtemp(join(tmpdir(), 'moyu-e2e-'));
   application = await electron.launch({
     args: [mainEntry, `--user-data-dir=${userDataPath}`],
     env: {

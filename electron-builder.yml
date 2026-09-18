@@ -1,6 +1,6 @@
-appId: com.moyu.professionalcanvas
-productName: Professional Canvas
-copyright: Copyright © 2026 Professional Canvas contributors
+appId: com.moyu.app
+productName: moyu
+copyright: Copyright © 2026 moyu contributors
 directories:
   output: dist
   buildResources: build
@@ -11,14 +11,14 @@ files:
 asar: true
 icon: build/icon
 mac:
-  artifactName: Professional-Canvas-mac-${arch}-${version}.${ext}
+  artifactName: moyu-mac-${arch}-${version}.${ext}
   category: public.app-category.graphics-design
   hardenedRuntime: true
   target:
     - dmg
     - zip
 win:
-  executableName: professional-canvas
+  executableName: moyu
   target:
     - target: nsis
       arch:
@@ -26,16 +26,16 @@ win:
     - target: portable
       arch:
         - x64
-  artifactName: Professional-Canvas-win-${arch}-${version}.${ext}
+  artifactName: moyu-win-${arch}-${version}.${ext}
 nsis:
-  artifactName: Professional-Canvas-win-${arch}-${version}-setup.${ext}
+  artifactName: moyu-win-${arch}-${version}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
   perMachine: false
 portable:
-  artifactName: Professional-Canvas-win-${arch}-${version}-portable.${ext}
+  artifactName: moyu-win-${arch}-${version}-portable.${ext}
 dmg:
-  artifactName: Professional-Canvas-mac-${arch}-${version}.${ext}
+  artifactName: moyu-mac-${arch}-${version}.${ext}
 publish: null

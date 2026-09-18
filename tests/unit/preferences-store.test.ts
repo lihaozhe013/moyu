@@ -15,7 +15,7 @@ const fallbackWindow: PersistedWindowState = {
 
 describe('preferences store', () => {
   it('migrates the legacy window state without deleting it', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'professional-canvas-preferences-'));
+    const directory = await mkdtemp(join(tmpdir(), 'moyu-preferences-'));
     try {
       const legacyPath = join(directory, 'window-state.json');
       await writeFile(
@@ -41,7 +41,7 @@ describe('preferences store', () => {
   });
 
   it('serializes updates and preserves unrelated fields', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'professional-canvas-preferences-'));
+    const directory = await mkdtemp(join(tmpdir(), 'moyu-preferences-'));
     try {
       const store = createPreferencesStore(directory, fallbackWindow);
       await store.load();

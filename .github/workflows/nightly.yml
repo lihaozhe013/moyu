@@ -68,7 +68,7 @@ jobs:
       - name: Electron E2E acceptance
         run: |
           xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' \
-            bash -c 'openbox --sm-disable >/tmp/professional-canvas-openbox.log 2>&1 & sleep 1; pnpm test:e2e'
+            bash -c 'openbox --sm-disable >/tmp/moyu-openbox.log 2>&1 & sleep 1; pnpm test:e2e'
 
   packages:
     name: Package ${{ matrix.name }}
@@ -150,7 +150,7 @@ jobs:
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: professional-canvas-${{ matrix.name }}
+          name: moyu-${{ matrix.name }}
           retention-days: 7
           if-no-files-found: error
           path: |
@@ -170,7 +170,7 @@ jobs:
       - name: Download platform packages
         uses: actions/download-artifact@v4
         with:
-          pattern: professional-canvas-*
+          pattern: moyu-*
           path: staging
           merge-multiple: true
 
@@ -188,11 +188,11 @@ jobs:
           fi
 
           mkdir -p release-assets
-          cp -- "${windows_installers[0]}" release-assets/professional-canvas-windows-x64-setup.exe
-          cp -- "${macos_images[0]}" release-assets/professional-canvas-macos-arm64.dmg
+          cp -- "${windows_installers[0]}" release-assets/moyu-windows-x64-setup.exe
+          cp -- "${macos_images[0]}" release-assets/moyu-macos-arm64.dmg
           (
             cd release-assets
-            shasum -a 256 professional-canvas-windows-x64-setup.exe professional-canvas-macos-arm64.dmg \
+            shasum -a 256 moyu-windows-x64-setup.exe moyu-macos-arm64.dmg \
               > SHA256SUMS.txt
           )
 
@@ -232,7 +232,7 @@ jobs:
 
           if release_id="$(gh api "${releases_api}/tags/nightly" --jq '.id' 2>/dev/null)"; then
             gh api --method PATCH "${releases_api}/${release_id}" \
-              -f name="Professional Canvas Nightly" \
+              -f name="moyu Nightly" \
               -f "body=${release_body}" \
               -F draft=true \
               -F prerelease=true \
@@ -240,7 +240,7 @@ jobs:
           else
             release_id="$(gh api --method POST "${releases_api}" \
               -f tag_name=nightly \
-              -f name="Professional Canvas Nightly" \
+              -f name="moyu Nightly" \
               -f "body=${release_body}" \
               -F draft=true \
               -F prerelease=true \
@@ -256,8 +256,8 @@ jobs:
           done <<< "${asset_ids}"
 
           gh release upload nightly \
-            release-assets/professional-canvas-windows-x64-setup.exe \
-            release-assets/professional-canvas-macos-arm64.dmg \
+            release-assets/moyu-windows-x64-setup.exe \
+            release-assets/moyu-macos-arm64.dmg \
             release-assets/SHA256SUMS.txt \
             --repo "${REPOSITORY}" \
             --clobber

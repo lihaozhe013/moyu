@@ -1,4 +1,4 @@
-# Professional Canvas Desktop App
+# moyu
 
 This is an experimental, temporary Electron runtime for loading self-authored
 web pages in a simple desktop shell. It is not a security browser and it is
