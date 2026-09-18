@@ -17,7 +17,7 @@ certification.
 | Settings remains open after save             | Settings IPC and renderer                         | Settings E2E                                   |
 | Shell/content bounds stay aligned            | `index.ts`, content layout, renderer IPC          | Resize and first-run E2E                       |
 | Local shell IPC remains stable               | preload, `ipc/`, shared types                     | IPC and shortcut unit tests                    |
-| Settings-driven whole-window drag mode       | settings IPC, `window-drag.ts`, `content-view.ts` | Drag unit tests and Settings-toggle E2E        |
+| Settings/palette whole-window drag toggles   | settings IPC, `window-drag.ts`, `content-view.ts` | Drag unit tests and Settings-toggle E2E        |
 | Drag mode survives content lifecycle         | `content-view.ts`, internal drag IPC              | Frame-style unit and content E2E checks        |
 | No persistent top chrome or app menu         | renderer layouts, window creation, startup        | Shell/Settings E2E and platform manual check   |
 

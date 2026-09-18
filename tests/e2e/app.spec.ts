@@ -344,6 +344,49 @@ test('toggles whole-window drag mode from Settings and restores workspace input'
     .toBe('clicked');
 });
 
+test('toggles whole-window drag mode from the command palette', async () => {
+  await launchApplication(`${fixtureOrigin}/window-drag`);
+  const shell = await application!.firstWindow();
+
+  const runToggleCommand = async (): Promise<void> => {
+    await shell.keyboard.press(`${primaryModifier}+Shift+P`);
+    await expect(
+      shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
+    ).toBeVisible();
+    await shell.getByRole('textbox', { name: 'Command' }).fill('drag');
+    await shell.keyboard.press('Enter');
+    await expect(
+      shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
+    ).toHaveCount(0);
+  };
+
+  await runToggleCommand();
+  await expect
+    .poll(async () => shell.evaluate(() => document.documentElement.dataset.windowDragMode))
+    .toBe('active');
+  await expect
+    .poll(async () => executeContent('document.documentElement.dataset.moyuWindowDragMode'))
+    .toBe('active');
+
+  await runToggleCommand();
+  await expect
+    .poll(async () => shell.evaluate(() => document.documentElement.dataset.windowDragMode))
+    .toBeUndefined();
+  await expect
+    .poll(async () => executeContent("document.documentElement.dataset.moyuWindowDragMode ?? ''"))
+    .toBe('');
+
+  const buttonPoint = (await executeContent(`(() => {
+    const rectangle = document.querySelector('#drag-test-button').getBoundingClientRect();
+    return { x: rectangle.left + rectangle.width / 2, y: rectangle.top + rectangle.height / 2 };
+  })()`)) as { x: number; y: number };
+  await sendContentMouse('mouseDown', buttonPoint.x, buttonPoint.y);
+  await sendContentMouse('mouseUp', buttonPoint.x, buttonPoint.y);
+  await expect
+    .poll(async () => executeContent("document.querySelector('#result').textContent"))
+    .toBe('clicked');
+});
+
 for (const fixture of localHtmlFixtures) {
   test(`loads local ${fixture.label} HTML edge-to-edge without a shell border`, async () => {
     const fixtureUrl = `${fixtureOrigin}${fixture.path}`;
@@ -382,7 +425,7 @@ test('opens and closes the command palette through the application shortcut', as
   await launchApplication();
   const shell = await application!.firstWindow();
 
-  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
+  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toBeVisible();
@@ -553,7 +596,7 @@ test('clears drag mode when the workspace URL changes in Settings', async () => 
     .toBe('');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
-  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
+  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toBeVisible();
@@ -781,7 +824,7 @@ test('reports WebGL capability and exposes only non-sensitive GPU diagnostics to
   });
   expect(Array.isArray(diagnostics?.scaleFactors)).toBe(true);
 
-  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
+  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
   await shell.getByRole('textbox', { name: 'Command' }).fill('gpu');
   await shell.getByRole('textbox', { name: 'Command' }).press('Enter');
   await expect(shell.locator('#gpu-title')).toBeVisible();
@@ -862,6 +905,6 @@ test('switches the interface language from the settings window', async () => {
   await expect(settings.locator('.settings-footer__status')).toContainText('保存成功');
 
   await shell.bringToFront();
-  await shell.keyboard.press(`${primaryModifier}+Shift+L`);
+  await shell.keyboard.press(`${primaryModifier}+Shift+P`);
   await expect(shell.locator('#command-palette-title')).toContainText('命令面板');
 });

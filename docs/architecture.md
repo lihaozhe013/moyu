@@ -100,9 +100,12 @@ re-renders with the returned snapshot.
 
 ## Window drag controller
 
-`window-drag.ts` owns the native window-drag state. There is no drag shortcut:
-the mode starts and ends only through the Settings toggle, which invokes the
-sender-validated `settings:set-window-drag-mode` IPC handler. The controller
+`window-drag.ts` owns the native window-drag state. There is no held drag
+shortcut: the mode starts and ends only through explicit toggles — the
+Settings window, which invokes the sender-validated
+`settings:set-window-drag-mode` IPC handler, and the palette-only
+`window.toggleDrag` command, which ships without a default key binding. The
+controller
 publishes an internal IPC event to the local shell and the Settings window and
 asks `content-view.ts` to inject a temporary `-webkit-app-region: drag` style
 into the remote document and every loaded subframe. The content controller

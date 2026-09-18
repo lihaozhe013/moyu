@@ -26,16 +26,21 @@ match the host rectangle, including on high-DPI displays and after resizing.
 
 ## Whole-window dragging
 
-The Settings window has a mouse-driven drag mode toggle. Keyboard shortcuts do
-not participate in drag mode at all: the mode starts and ends only when the
-toggle is pressed, so a lost key event can never strand the shell in drag mode.
+Drag mode has two explicit triggers, both one-shot toggles: the mouse-driven
+toggle in the Settings window and the palette-only `window.toggleDrag` command
+in the command palette. The command ships without a default key binding, so
+keyboard shortcuts do not trigger drag mode out of the box; a user may bind it
+in Settings, and the binding then acts as a safe explicit toggle. Keyboard
+holds and releases never participate in the mode state machine, so a lost key
+event can never strand the shell in drag mode.
 
 While drag mode is on, pressing and dragging the left mouse button anywhere in
 the workspace moves the frameless window, and the window edges keep their
 native resize behavior. The gesture is consumed by the native window drag.
-Pressing the toggle again restores normal page clicking, text selection, and
-scrolling. Settings itself never enters drag mode and remains a normal form
-window.
+Triggering either toggle again restores normal page clicking, text selection,
+and scrolling. Settings itself never enters drag mode and remains a normal form
+window; the palette stays keyboard-operable while drag mode is on because the
+drag region only claims the pointer.
 
 The drag styling is temporary and honest about its state: Settings renders the
 actual mode through the typed snapshot and push events. The mode is reapplied
@@ -62,10 +67,11 @@ ready.
 ## Presentation and keyboard commands
 
 The existing command registry provides reload, hard reload, zoom, fullscreen,
-Settings, command palette, diagnostics, and window presentation actions. These
+Settings, command palette, diagnostics, window presentation actions, and the
+palette-only drag mode toggle. These
 commands remain application features and are independent of the remote page's
 Node/Electron capabilities. Every command is a one-shot press action; window
-dragging is not a registered command.
+dragging has no held shortcut.
 
 ## Settings window
 

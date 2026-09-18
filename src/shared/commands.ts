@@ -42,6 +42,7 @@ export const COMMAND_IDS: readonly CommandId[] = [
   'palette.open',
   'window.minimize',
   'window.toggleMaximize',
+  'window.toggleDrag',
   'window.close',
   'app.quit',
   'window.toggleFullscreen',
@@ -115,6 +116,13 @@ const COMMAND_METADATA: readonly CommandMetadata[] = [
   {
     id: 'window.toggleMaximize',
     scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'window.toggleDrag',
+    scope: 'workspace',
     activation: 'press',
     customizable: true,
     devOnly: false,

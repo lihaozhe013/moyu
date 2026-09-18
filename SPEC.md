@@ -114,17 +114,20 @@ After a successful Settings save:
 Resizing, reload, and changing the URL a second time MUST preserve that
 alignment behavior.
 
-The command registry MUST NOT define a window drag shortcut command.
-Whole-window dragging MUST be activated only through a mouse-driven toggle in
-the Settings window; keyboard holds and releases MUST NOT participate in the
-drag mode state machine.
+The command registry MUST NOT define a held window-drag shortcut. Whole-window
+dragging MUST be activated through explicit press toggles only: the
+mouse-driven toggle in the Settings window and the palette-only
+`window.toggleDrag` command. Keyboard holds and releases MUST NOT participate
+in the drag mode state machine. The `window.toggleDrag` command MUST NOT ship
+a default key binding; users MAY bind it in Settings, and any bound key acts
+as a safe explicit toggle rather than a held mode.
 
-While the Settings drag mode toggle is active, a left-button press and drag
+While the drag mode is active, a left-button press and drag
 anywhere in the main workspace MUST move the frameless window, and the window
 edges MUST keep their native resize behavior. The temporary drag mode MUST
 apply to the local shell and every loaded frame of the remote workspace,
 including after reload, navigation, or content view replacement. Activating
-the toggle again MUST immediately remove the temporary drag mode so page
+either toggle again MUST immediately remove the temporary drag mode so page
 clicking, text selection, and scrolling work normally again.
 
 The Settings UI MUST render the actual drag mode state. The initial state MUST

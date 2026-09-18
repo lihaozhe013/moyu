@@ -113,6 +113,11 @@ async function createApplicationWindow(): Promise<void> {
       case 'window.toggleMaximize':
         presentationController?.toggleMaximize();
         return;
+      case 'window.toggleDrag': {
+        const dragController = windowDragController;
+        dragController?.setActive(!dragController.isActive());
+        return;
+      }
       case 'window.close': {
         const focusedWindow = BrowserWindow.getFocusedWindow();
         if (settingsWindow !== null && focusedWindow === settingsWindow.window) {

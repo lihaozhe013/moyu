@@ -19,6 +19,10 @@
     "darwin": null,
     "win32": null
   },
+  "window.toggleDrag": {
+    "darwin": null,
+    "win32": null
+  },
   "window.close": {
     "darwin": null,
     "win32": null

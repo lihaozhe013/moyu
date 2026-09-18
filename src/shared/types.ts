@@ -18,6 +18,7 @@ export type CommandId =
   | 'palette.open'
   | 'window.minimize'
   | 'window.toggleMaximize'
+  | 'window.toggleDrag'
   | 'window.close'
   | 'app.quit'
   | 'window.toggleFullscreen'

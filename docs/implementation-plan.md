@@ -52,9 +52,10 @@ over security isolation.
 
 ### 5. Whole-window drag and chrome removal
 
-- Window dragging has no keyboard shortcut. The Settings window owns a
-  mouse-driven drag mode toggle that activates and deactivates the mode
-  through the typed Settings IPC contract.
+- Window dragging has no held keyboard shortcut. It is activated and
+  deactivated through explicit one-shot toggles: a mouse-driven toggle in the
+  Settings window backed by the typed Settings IPC contract, and the
+  palette-only `window.toggleDrag` command without a default key binding.
 - The main process synchronizes temporary native drag styling across the shell,
   the remote document, its child frames, and the Settings window state, and
   clears it on toggle-off, content replacement, reload lifecycle changes, and
@@ -66,7 +67,7 @@ over security isolation.
 
 ## Current verification shape
 
-The repository currently contains 20 Vitest files with 62 unit tests and 26
+The repository currently contains 20 Vitest files with 62 unit tests and 27
 Electron E2E scenarios. The exact count can change as fixtures and shell
 features evolve; the commands in `README.md` remain authoritative.
 

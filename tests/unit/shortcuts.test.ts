@@ -66,7 +66,7 @@ describe('application shortcuts', () => {
     );
 
     expect(
-      content.trigger({ type: 'keyDown', key: 'L', control: true, meta: false, shift: true }),
+      content.trigger({ type: 'keyDown', key: 'P', control: true, meta: false, shift: true }),
     ).toBe(true);
     expect(shell.sent).toEqual(['command-palette:open']);
     expect(
@@ -78,47 +78,31 @@ describe('application shortcuts', () => {
     expect(
       content.trigger({ type: 'keyDown', key: 'F11', control: false, meta: false, shift: false }),
     ).toBe(true);
-    expect(
-      shell.trigger({ type: 'keyDown', key: 'I', control: true, meta: false, shift: true }),
-    ).toBe(true);
-    expect(calls).toEqual([
-      'content.hardReload',
-      'content.zoomIn',
-      'window.toggleFullscreen',
-      'devtools.open',
-    ]);
+    expect(calls).toEqual(['content.hardReload', 'content.zoomIn', 'window.toggleFullscreen']);
 
     remove();
     content.trigger({ type: 'keyDown', key: 'R', control: true, meta: false, shift: false });
-    expect(calls).toHaveLength(4);
+    expect(calls).toHaveLength(3);
   });
 
-  it('does not open development tools in production', () => {
+  it('ignores removed default bindings such as development tools', () => {
     const shell = new FakeContents();
     const content = new FakeContents();
     const calls: string[] = [];
     installApplicationShortcuts(
       shell as never,
       content as never,
-      {
-        ...config,
-        mode: 'production',
-        development: { enableDevTools: false },
-      },
+      config,
       createCommandRegistry('win32'),
       {
-        executeCommand: (commandId) => {
-          if (commandId !== 'devtools.open') {
-            calls.push(commandId);
-          }
-        },
+        executeCommand: (commandId) => calls.push(commandId),
         dismissOverlays: () => undefined,
       },
     );
 
     expect(
       shell.trigger({ type: 'keyDown', key: 'I', control: true, meta: false, shift: true }),
-    ).toBe(true);
+    ).toBe(false);
     expect(calls).toEqual([]);
   });
 });

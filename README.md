@@ -56,14 +56,16 @@ view exists, then applies them as soon as the first `WebContentsView` is
 created. Saving a URL therefore creates a visible view instead of a `0x0`
 surface.
 
-Enable drag mode from the Settings window, then press the left mouse button
+Enable drag mode from the Settings window or through the `Toggle Window Drag
+Mode` command palette entry, then press the left mouse button
 anywhere in the main workspace to move the frameless window; window edges keep
 their native resize behavior. While drag mode is on, the pointer gesture is
-consumed by window dragging. Press the toggle again to restore normal page
-clicking, text selection, and scrolling. The mode is never triggered by
-keyboard shortcuts, and the Settings window remains a normal form surface. The
-application does not register a project-specific global menu; macOS still owns
-its system menu bar and Apple menu.
+consumed by window dragging. Trigger the toggle again to restore normal page
+clicking, text selection, and scrolling. The mode is never triggered by a
+default keyboard shortcut (the palette command can optionally be bound in
+Settings as an explicit toggle), and the Settings window remains a normal form
+surface. The application does not register a project-specific global menu;
+macOS still owns its system menu bar and Apple menu.
 
 ## Documentation
 

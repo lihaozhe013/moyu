@@ -16,7 +16,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-The current suite has 20 Vitest files with 62 unit tests and 26 Electron E2E
+The current suite has 20 Vitest files with 62 unit tests and 27 Electron E2E
 scenarios (including fixture and mode loops). Network-dependent public-site
 checks may fail when a site or the local network is unavailable; they are
 compatibility smoke tests rather than a security requirement.
@@ -69,7 +69,8 @@ The suite verifies:
    production modes;
 5. popup creation and permission request initiation;
 6. local HTTP fixtures and optional public HTTPS compatibility smoke pages;
-7. the Settings drag mode toggle, temporary frame styles, restored page
+7. the Settings drag mode toggle and the palette-only drag command, temporary
+   frame styles, restored page
    clicking, state sync through the settings snapshot and push events, and
    clearing when a workspace URL change replaces the content view;
 8. the absence of the local `desktopAPI` bridge in remote content while the

@@ -63,5 +63,9 @@
     "label": "Open Content DevTools",
     "description": "Open developer tools for the workspace content."
   },
+  "window.toggleDrag": {
+    "label": "Toggle Window Drag Mode",
+    "description": "Turn whole-window dragging and free resizing on or off."
+  },
   "paletteOnly": "Palette only"
 }

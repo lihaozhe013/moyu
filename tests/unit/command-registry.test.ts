@@ -14,7 +14,15 @@ describe('command registry contracts', () => {
     const windowsMinimize = windows.find((definition) => definition.id === 'window.minimize');
 
     expect(macMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['meta'] });
-    expect(windowsMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['alt'] });
+    expect(windowsMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['control'] });
+
+    const macDrag = mac.find((definition) => definition.id === 'window.toggleDrag');
+    expect(macDrag).toMatchObject({
+      scope: 'workspace',
+      activation: 'press',
+      customizable: true,
+      defaultBinding: undefined,
+    });
 
     const macIds: readonly string[] = mac.map((definition) => definition.id);
     const windowsIds: readonly string[] = windows.map((definition) => definition.id);
@@ -75,7 +83,14 @@ describe('command registry contracts', () => {
         'settings',
         false,
       ),
-    ).toBe('settings.save');
+    ).toBeUndefined();
+    expect(
+      registry.match(
+        { code: 'Comma', alt: false, control: true, meta: false, shift: false },
+        'settings',
+        false,
+      ),
+    ).toBe('settings.open');
     expect(
       registry.match(
         { code: 'KeyZ', alt: false, control: true, meta: false, shift: true },

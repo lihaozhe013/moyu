@@ -63,5 +63,9 @@
     "label": "打开内容 DevTools",
     "description": "打开工作区内容的开发者工具。"
   },
+  "window.toggleDrag": {
+    "label": "切换窗口拖拽模式",
+    "description": "开启或关闭整窗拖拽与自由调整尺寸。"
+  },
   "paletteOnly": "仅面板"
 }
