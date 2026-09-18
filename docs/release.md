@@ -101,7 +101,8 @@ Before release:
 - verify the installed executable's signature;
 - install and launch on a clean Windows 11 environment;
 - test standard-user installation/uninstallation behavior for the chosen installer;
-- verify frameless resizing, window controls, maximize/restore, fullscreen, and scaling; and
+- verify frameless resizing with no native or custom window buttons, keyboard
+  minimize/maximize/restore, fullscreen, and scaling; and
 - confirm no console window, Chromium menu, default icon, or development endpoint appears.
 
 Certificate provider and installer format remain product inputs and must be selected before the first signed candidate.
@@ -116,7 +117,8 @@ Before release:
 - notarize release artifacts and staple the result where applicable;
 - verify signatures and Gatekeeper assessment;
 - launch on clean supported macOS environments;
-- verify native menu, traffic lights, fullscreen, Retina layout, Cmd shortcuts, and trackpad behavior; and
+- verify native menu, hidden traffic lights, fullscreen, Retina layout, Cmd
+  shortcuts, Settings focus, context menus, and trackpad behavior; and
 - confirm architecture-correct execution rather than accidental Rosetta-only behavior on Apple Silicon.
 
 The build structure must leave room for a future universal artifact without making it a version 1 requirement.

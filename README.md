@@ -1,104 +1,99 @@
 # Professional Canvas Desktop App
 
-Professional Canvas Desktop App is a planned cross-platform Electron shell for a single, predefined web workspace. It is designed to feel like a focused creative desktop application, not a general-purpose browser.
+Professional Canvas is a cross-platform Electron shell for one configured web
+workspace. It is a keyboard-first, canvas-first desktop application rather
+than a general-purpose browser.
 
-> **Project status:** Phase 8 structurally complete. The strict TypeScript/toolchain scaffold, pure policy contracts, secure local shell, validated preload/IPC boundary, isolated content surface, desktop interactions, shortcuts, zoom, fullscreen, window-state persistence, deterministic fixtures, Electron E2E coverage, non-sensitive GPU diagnostics, packaging metadata, and CI workflows are implemented; product branding inputs, signed artifacts, and final clean-platform release verification remain pending.
+The normative constraints live in [`SPEC.md`](./SPEC.md). Architecture,
+security, UX, testing, development, release, and traceability notes are in
+[`docs/`](./docs/).
 
-The normative product and engineering constraints live in [`SPEC.md`](./SPEC.md). The documents in [`docs/`](./docs/) explain those constraints as architecture, security, user-experience, delivery, and verification guidance. If a secondary document conflicts with `SPEC.md`, `SPEC.md` takes precedence until the conflict is deliberately resolved.
+## Current implementation
 
-## Product scope
+The repository includes:
 
-The application will provide:
+- a frameless main window with no native or custom close/minimize/maximize
+  controls, persistent title bar, toolbar, inspector, or status bar;
+- a 12 px drag strip, one isolated `WebContentsView`, and local transient
+  overlays;
+- a separate single-instance frameless Settings window for workspace URL and
+  shortcut preferences;
+- a main-process command registry with platform defaults, physical-key capture,
+  conflict validation, dynamic macOS menu accelerators, and right-click
+  Settings entry;
+- versioned atomic preferences with legacy `window-state.json` migration;
+- exact-origin navigation, popup/permission/download denial, secure preload
+  boundaries, generation-safe URL replacement, zoom, fullscreen, and crash
+  recovery; and
+- deterministic loopback fixtures, 49 unit tests, and 13 Electron E2E tests.
 
-- one native desktop window with locally bundled application chrome;
-- one isolated `WebContentsView` containing a configured trusted web application;
-- a dense, dark, professional workspace with title, tool, inspector, and status regions;
-- normal, maximized, and native fullscreen presentation modes;
-- restricted navigation, permissions, popups, downloads, and IPC;
-- controlled reload, zoom, diagnostics, and recovery behavior; and
-- a foundation suitable for future WebGL2, WebGPU, Three.js, and other GPU-heavy content.
+Product branding, signed artifacts, notarization, and clean Windows/macOS
+release evidence remain deployment inputs.
 
-The application will not provide tabs, an address bar, bookmarks, browser history UI, extensions, or unrestricted web browsing.
+## Product boundary
+
+The application displays one user-configured remote workspace and does not
+provide tabs, an address bar, browser history, bookmarks, extensions,
+unrestricted navigation, or uncontrolled popups. The only URL editor is in the
+local Settings window. In production, saved workspace URLs must use HTTPS and
+contain a valid host without credentials.
 
 ## Architecture at a glance
 
 ```text
 Electron main process
-├── Local shell renderer
-│   └── React application chrome
-└── Isolated WebContentsView
-    └── Configured trusted web application
+├── local workspace renderer (minimal shell)
+├── local settings renderer (URL + shortcut editor)
+└── one isolated remote WebContentsView (no preload)
 ```
 
-The main process owns native resources and policy. The shell renderer owns visible desktop chrome. The remote content surface receives no desktop privileges and cannot control its native bounds.
-
-See [`docs/architecture.md`](./docs/architecture.md) for component boundaries and runtime flows.
+The main process owns native resources, security policy, command dispatch,
+preference persistence, and IPC validation. The two local renderers receive
+only capability-specific preload APIs. Remote content receives no application
+API.
 
 ## Documentation
 
-| Document                                                       | Purpose                                                                               |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [`SPEC.md`](./SPEC.md)                                         | Normative constraint reference and source of truth                                   |
-| [`docs/product-experience.md`](./docs/product-experience.md)   | Visible behavior, interaction model, platform conventions, and UX acceptance criteria |
-| [`docs/architecture.md`](./docs/architecture.md)               | Trust domains, module ownership, state, configuration, and runtime flows              |
-| [`docs/security.md`](./docs/security.md)                       | Threat model, security invariants, and review checklist                               |
-| [`docs/development.md`](./docs/development.md)                 | Pre-bootstrap decisions, intended toolchain, coding rules, and contributor workflow   |
-| [`docs/testing.md`](./docs/testing.md)                         | Unit, integration, E2E, fixture, GPU, and platform validation strategy                |
-| [`docs/release.md`](./docs/release.md)                         | CI, packaging, signing, artifact, and release requirements                            |
-| [`docs/implementation-plan.md`](./docs/implementation-plan.md) | Sequenced implementation phases, gates, risks, and unresolved inputs                  |
-| [`docs/traceability.md`](./docs/traceability.md)               | Mapping from every `SPEC.md` section to supporting documentation and verification     |
+| Document                                                       | Purpose                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------- |
+| [`SPEC.md`](./SPEC.md)                                         | Normative constraints for agents and releases            |
+| [`docs/product-experience.md`](./docs/product-experience.md)   | Visible shell, settings, keyboard, and recovery behavior |
+| [`docs/architecture.md`](./docs/architecture.md)               | Trust domains, flows, and module ownership               |
+| [`docs/security.md`](./docs/security.md)                       | Threat model and fail-closed controls                    |
+| [`docs/development.md`](./docs/development.md)                 | Toolchain, commands, boundaries, and workflow            |
+| [`docs/testing.md`](./docs/testing.md)                         | Unit, E2E, fixture, GPU, and platform checks             |
+| [`docs/release.md`](./docs/release.md)                         | Packaging, signing, and release evidence                 |
+| [`docs/implementation-plan.md`](./docs/implementation-plan.md) | Historical phase record and remaining release inputs     |
+| [`docs/traceability.md`](./docs/traceability.md)               | Requirement-to-document-to-test matrix                   |
 
-## Required inputs before the relevant phase
-
-The specification intentionally does not define several deployment-specific values. They must be decided before their corresponding implementation phase:
-
-| Input                               | Why it is required                                           | Latest decision point               |
-| ----------------------------------- | ------------------------------------------------------------ | ----------------------------------- |
-| Product name and branding assets    | Window title, package metadata, menus, installers, and icons | Before packaging configuration      |
-| Initial content URL                 | Defines the only initial remote workspace                    | Before content-view integration     |
-| Allowed application origins         | Enforces the navigation boundary                             | Before any remote content is loaded |
-| Authentication origins and flows    | Determines deliberate exceptions to same-origin navigation   | Before authentication testing       |
-| Session persistence requirement     | Determines whether a named persistent partition is needed    | Before session configuration        |
-| Required web permissions            | Determines explicit, origin-scoped permission grants         | Before production security review   |
-| Download requirements               | Determines whether the default deny policy can remain        | Before production acceptance        |
-| Supported macOS deployment range    | Drives the Electron choice and release matrix                | Before dependency pinning           |
-| Signing and notarization identities | Required for trusted distributable artifacts                 | Before a signed release             |
-
-Unknown values must fail closed where security is affected. Placeholder production origins must not be silently accepted.
-
-## Intended toolchain
-
-The implementation uses Electron, TypeScript, Vite, electron-vite, React, Vitest, Playwright, ESLint, Prettier, electron-builder, and pnpm. The Phase 0 compatibility set is pinned exactly in `package.json` and `pnpm-lock.yaml`; future upgrades must follow the compatibility procedure in [`docs/development.md`](./docs/development.md).
-
-## Intended commands
-
-Once the bootstrap phase is complete, the repository is expected to expose:
+## Commands
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm dev
-pnpm build
-pnpm preview
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm build
 pnpm test:e2e
 pnpm package
-pnpm package:win
-pnpm package:mac
 ```
 
-The implementation commands are available. `pnpm package`, `pnpm package:win`, and `pnpm package:mac` produce reproducible unsigned artifacts until product-specific signing and notarization inputs are supplied.
+`pnpm package:win` and `pnpm package:mac` select platform targets. Unsigned
+artifacts are development outputs until product signing and notarization
+credentials are available.
+
+## Environment
+
+Copy [`.env.example`](./.env.example) for a local configuration. Runtime
+configuration is validated once at startup. `APP_CONTENT_URL` is optional; an
+explicit empty value starts the local first-run state. User preferences take
+precedence on later launches. `APP_ALLOWED_ORIGINS` is retained for legacy
+compatibility and does not expand the active workspace origin.
 
 ## Definition of done
 
-Version 1 is complete only when:
-
-- the application passes the functional, security, accessibility, and no-browser-leakage criteria in `SPEC.md`;
-- the local shell and remote content remain separate trust domains;
-- navigation, popups, permissions, downloads, IPC, and configuration fail closed;
-- startup, loading, failure, crash, resize, maximize, restore, fullscreen, and zoom flows are verified;
-- required Windows 11 and macOS architecture/platform checks pass;
-- typecheck, lint, unit tests, build, applicable E2E tests, and packaging succeed from a frozen lockfile; and
-- release artifacts are produced with the required platform signing controls or are clearly labeled as non-release development artifacts.
-
-The current repository contains the completed implementation through Phase 8's reproducible packaging structure. Product branding, signing/notarization credentials, and final Windows/macOS clean-machine verification remain release inputs.
+A release candidate must pass the gates in [`SPEC.md`](./SPEC.md) and
+[`docs/testing.md`](./docs/testing.md), preserve all four trust domains, show
+no browser or window-button leakage, and include platform/signing evidence or
+be clearly labeled as release-input pending.

@@ -33,10 +33,10 @@ Higher trust
   Electron main process
           │ narrow, validated IPC
           ▼
-  Local shell renderer
-          │ visual adjacency only; no shared privilege
+  Local workspace renderer ── separate settings renderer
+          │ capability-specific preload only
           ▼
-  Remote content WebContentsView
+  Remote content WebContentsView (no preload)
           │ network requests
           ▼
   Configured and authentication origins
@@ -106,13 +106,16 @@ Every IPC path must satisfy all of these requirements:
 
 The preload exposes named functions, not `ipcRenderer`, `send`, `invoke`, `on`, or Node/Electron modules.
 
-Initial capabilities are limited to:
+Initial workspace capabilities are limited to window intent, content reload and
+zoom, content state, validated bounds, known command summaries/dispatch,
+overlay visibility, and non-sensitive GPU diagnostics. The settings preload is
+separate and exposes only a snapshot read, validated preference save,
+capture-mode state, close, and main-request events. Settings writes are always
+performed by the main process after full validation and atomic persistence.
 
-- minimize, maximize/restore, close, and fullscreen intent;
-- window state retrieval;
-- reload and hard reload of the content surface;
-- controlled content zoom and content state retrieval; and
-- validated content-bounds updates.
+The remote content receives none of these bridges. In particular, a generic
+`execute(command: string)` or generic settings patch channel is prohibited;
+the command IPC accepts only a stable `CommandId` that the main registry knows.
 
 Screenshot capture and diagnostics remain main-process-controlled internal capabilities. They must not be callable by remote content.
 

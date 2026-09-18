@@ -460,14 +460,16 @@ The supported modes are `development`, `production`, and `test`:
 - Tests use deterministic local fixture content and must not depend solely on a
   live production website.
 
-Production requires a validated HTTPS workspace URL. Fixed authentication and
-support origins require explicit approval. Placeholder branding, placeholder
-URLs, broad allowlists, and development flags MUST NOT silently ship as
-production defaults. Missing product inputs must fail clearly or remain
-explicitly marked as release blockers. If neither preferences nor a first-run
-default contains a valid workspace URL, the app MUST show a local first-run
-state and open or direct keyboard focus to Settings; it MUST NOT navigate to a
-placeholder or guessed URL.
+When a workspace URL is present in production, it MUST be a validated HTTPS
+URL. A production installation MAY start without a workspace URL so that first
+run can be completed locally; it MUST show a local first-run state, open or
+focus Settings, and create no remote content until a valid HTTPS URL is saved.
+Fixed authentication and support origins require explicit approval.
+Placeholder branding, placeholder URLs, broad allowlists, and development
+flags MUST NOT silently ship as production defaults. Missing product inputs
+must fail clearly or remain explicitly marked as release blockers. If neither
+preferences nor a first-run default contains a valid workspace URL, the app
+MUST NOT navigate to a placeholder or guessed URL.
 
 ## 8. Persistence, capture, and release constraints
 

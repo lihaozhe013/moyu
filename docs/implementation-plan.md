@@ -1,266 +1,97 @@
-# Implementation Plan
+# Implementation Plan and Phase Record
 
-This historical plan translates the constraints in [`../SPEC.md`](../SPEC.md)
-into implementation phases. It is an execution record, not a replacement for
-the normative Agent Constraint Specification. Phase 0 is complete; subsequent
-phases are implemented in order as their inputs become available and
-predecessor gates pass.
+This is the historical execution record for the keyboard-first workspace
+constraints in [`../SPEC.md`](../SPEC.md). The specification is normative;
+this document records sequencing, commits, gates, and remaining deployment
+inputs.
 
-## Guiding constraints
+## Delivery principles
 
-- Security boundaries are established before loading remote content.
-- Pure policy and validation are built before Electron event wiring where practical.
-- The shell stays local and remains the primary renderer.
-- Production defaults deny navigation exceptions, popups, permissions, downloads, DevTools, and arbitrary locations.
-- Cross-platform behavior is validated continuously rather than postponed until final packaging.
-- Dependency versions are resolved once at bootstrap and then pinned exactly.
+- Establish pure contracts and fail-closed policy before Electron wiring.
+- Keep main, workspace renderer, settings renderer, and remote content as
+  separate trust domains.
+- Route all shell commands through one registry and all preferences through one
+  versioned atomic store.
+- Verify each phase with `pnpm typecheck`, `pnpm lint`, `pnpm test`, and
+  `pnpm build`; cross-process phases also run `pnpm test:e2e`.
+- Use English Conventional Commits and update focused documentation when a
+  behavior or contract changes.
 
-## Phase 0: Product inputs and toolchain (complete)
+## Completed phases
 
-### Inputs to resolve
+### 1. Constraint baseline
 
-- product name, application identifiers, and initial branding assets;
-- initial content URL and exact allowed origins;
-- any authentication origins and required redirect behavior;
-- whether authentication state must persist;
-- required web permissions, if any;
-- whether downloads are a version 1 requirement;
-- supported macOS deployment range; and
-- release signing/notarization ownership.
+`docs(spec): define keyboard-first workspace constraints`
 
-### Work
+Rewrote `SPEC.md` as an agent-facing constraint reference: four trust
+domains, frameless no-button shell, keyboard-complete command model, separate
+Settings window, dynamic URL/origin policy, versioned preferences, and
+fail-closed security/verification requirements.
 
-- Query the package registries using the commands in [`development.md`](./development.md).
-- select a mutually compatible Electron/electron-vite/Vite/TypeScript/Node toolchain;
-- bootstrap pnpm, TypeScript, React, lint, format, unit-test, E2E, and packaging configuration;
-- establish ESM and strict TypeScript configuration;
-- pin exact versions and commit the lockfile; and
-- record any compatibility constraints.
+### 2. Contracts, preferences, and migration
 
-### Exit gate
+`refactor(core): add command and preference contracts`
 
-- Clean frozen install, typecheck, test placeholder, and production build succeed.
-- Development and production shell entry paths are distinct.
-- No remote workspace is loaded yet.
+Added serializable command/shortcut/preferences types, URL and shortcut
+validation, partial-field recovery, version 1 preference storage, atomic
+temporary-file rename, concurrent patch merging, and migration from the
+legacy window-state file without deleting it.
 
-The completed bootstrap uses the exact versions recorded in `package.json` and `pnpm-lock.yaml`. Product-specific origins, branding, and signing inputs remain unresolved and are intentionally not embedded in the scaffold.
+### 3. Command registry
 
-## Phase 1: Pure contracts and policy (complete)
+`feat(commands): add customizable command registry`
 
-### Work
+Added platform defaults (including macOS Cmd+M/Cmd+Shift+M and Windows
+Alt+M/Alt+Shift+M), physical-key matching, conflict rejection, dynamic menu
+accelerators, surface-aware dispatch, and settings-capture pause behavior.
 
-- Define shared serializable geometry, window, content, configuration, and IPC types.
-- Implement runtime configuration validation.
-- Implement pure URL classification and navigation decisions.
-- Implement popup decisions with default denial.
-- Implement content-bounds validation/conversion.
-- Implement window presentation and persisted-placement state transitions.
-- Establish a minimal categorized logger with sanitization rules.
+### 4. Settings and dynamic workspace URL
 
-### Exit gate
+`feat(settings): add workspace and shortcut preferences`
 
-- Unit tests cover positive, negative, malformed, boundary, and development/production cases.
-- Policy modules do not require a live Electron application to test.
-- Unknown configuration and navigation inputs fail closed.
+Added the independent 760×640 frameless Settings window, minimal preload and
+IPC boundary, searchable URL/shortcut form, physical-key capture, reset and
+dirty-state flows, no-URL first-run behavior, immediate URL replacement, and
+generation-safe content recreation.
 
-The completed policy layer includes typed shared contracts, runtime validation, exact-origin navigation checks, default-deny popup decisions, bounds normalization, window-state restoration, and sanitized categorized logging. The next target is Phase 2: secure main window and local shell.
+### 5. Minimal keyboard-first shell
 
-## Phase 2: Secure main window and local shell (complete)
+`feat(shell): adopt minimal keyboard-first workspace`
 
-### Work
+Removed persistent titlebar, menu bar, tool rail, inspector, status bar, and
+custom window buttons. Added the 12 px drag strip, dynamic command palette,
+overlay-aware native view visibility, unified right-click Settings menu,
+macOS registry-backed application menu, and shell command IPC.
 
-- Add the single-instance lifecycle.
-- Create the hidden, dark-background `BrowserWindow` with hardened preferences.
-- Load the locally bundled React shell.
-- Implement the workstation layout, base tokens, drag regions, and platform title-bar treatment.
-- Show only after initial shell readiness.
-- Add local loading and error overlay foundations.
-- Add native Windows and macOS menu behavior appropriate to each platform.
+## Verification status
 
-### Exit gate
-
-- The shell launches without white, blank, Vite, or unstyled flashes.
-- Window dragging, controls, minimum dimensions, maximize/restore, and basic accessibility work.
-- Production output contains no generic Electron menu or branding.
-- Still no remote content is loaded.
-
-The completed shell includes the hidden startup window, single-instance lifecycle, platform title-bar treatment, native menu policy, accessible local workspace regions, and validated window-control IPC. The next target is Phase 3 hardening and completion of the preload/IPC surface before attaching remote content.
-
-## Phase 3: Preload and IPC (complete)
-
-### Work
-
-- Expose the smallest named `DesktopAPI` through `contextBridge`.
-- Register known channels and validate the shell sender/main frame.
-- Add runtime validation for all payloads.
-- Wire window actions and typed state events.
-- Ensure listener teardown and development reload behavior are safe.
-
-### Exit gate
-
-- The renderer cannot access `ipcRenderer`, Node.js, Electron modules, filesystem, process, shell, or child-process APIs.
-- Calls from unexpected senders and malformed payloads are rejected by tests.
-- Window controls operate only through the typed bridge.
-
-The completed IPC boundary exposes only named window/content/layout operations, validates shell sender frames and payloads in the main process, provides typed content-state events, and fails explicitly when the content surface is not initialized. The next target is Phase 4: isolated content integration.
-
-## Phase 4: Isolated content integration (complete)
-
-### Work
-
-- Create exactly one hardened `WebContentsView` with no preload.
-- Obtain its explicit session and install permission, download, context-menu, navigation, and popup policies before navigation.
-- Attach it to the primary window and load the configured URL.
-- Implement renderer measurement, frame-coalesced bounds IPC, and main-process `setBounds` ownership.
-- Translate content load, error, responsiveness, and renderer-exit events into shell state.
-- Implement reload, hard reload, and recovery actions.
-
-### Exit gate
-
-- Allowed fixture content loads in the correct rectangle.
-- Denied navigation, redirect, popup, permission, and download cases remain denied.
-- The shell survives content load failure and renderer exit.
-- Bounds remain aligned during resize, maximize, restore, and fullscreen at tested scales.
-
-The completed content integration creates one sandboxed `WebContentsView` on a named session, installs navigation/redirect, popup, permission, context-menu, and download policies before loading, synchronizes renderer geometry through validated IPC, and publishes custom loading/error/crash states to the shell. The next target is Phase 5: interaction and desktop behavior completion.
-
-## Phase 5: Interaction and desktop behavior (complete)
-
-### Work
-
-- Add command palette and production command aliases.
-- Add application-scoped keyboard shortcuts.
-- Implement explicit windowed/maximized/fullscreen behavior.
-- Add controlled content zoom and fixed shell zoom.
-- Complete platform-specific menu and context-menu behavior.
-- Persist validated window state and optionally content zoom if approved.
-- Add internal screenshot interface for content capture.
-
-### Exit gate
-
-- Shortcuts affect the correct surface and respect environment restrictions.
-- Fullscreen restores the prior state.
-- Zoom stays on approved steps and within 0.5–2.0.
-- A second instance focuses/restores the existing window.
-- Production cannot open DevTools or arbitrary locations by default.
-
-The completed interaction layer adds a controlled command palette, application-scoped shortcuts, native windowed/maximized/fullscreen transitions, approved-step content zoom, development-only inspection access, validated window-state persistence, and an internal screenshot capture interface. The next target is Phase 6: deterministic fixtures, end-to-end coverage, and resilience checks.
-
-## Phase 6: Fixtures, E2E, and resilience (complete)
-
-### Work
-
-- Build the deterministic local fixture routes described in [`testing.md`](./testing.md).
-- Implement the complete unit-test requirements.
-- Add Playwright Electron scenarios for launch, layout, window state, shortcuts, policy, and recovery.
-- Add crash/unresponsive coverage where Electron permits deterministic testing.
-- Add accessibility and no-browser-leakage assertions.
-
-### Exit gate
-
-- All required `SPEC.md` unit and E2E scenarios pass on supported runners.
-- Tests do not require the production website or public network.
-- Failure output is useful without exposing sensitive content.
-
-The completed fixture and resilience layer provides loopback routes for readiness, redirects, popups, permissions, WebGL, downloads, and deterministic recovery; Playwright Electron scenarios cover launch, containment, geometry, presentation, reload, zoom, error recovery, popup/permission denial, and content renderer crash recovery. The next target is Phase 7: GPU capability and performance validation.
-
-## Phase 7: GPU and performance validation (complete)
-
-### Work
-
-- Implement `/webgl` and optional WebGPU feature detection in the fixture.
-- Add internal non-sensitive GPU diagnostics.
-- Validate that hardware acceleration remains enabled.
-- Measure idle shell activity, bounds update frequency, resize behavior, and React rendering.
-- Evaluate background throttling only with a reproducible scenario.
-
-### Exit gate
-
-- WebGL smoke behavior works on representative supported hardware.
-- Unsupported WebGPU is handled as a capability result, not a shell failure.
-- The shell has no continuous idle render/polling loop or redundant bounds storm.
-- No undocumented GPU switch or blanket throttling override is present.
-
-The completed GPU/performance layer keeps Chromium hardware acceleration under Electron defaults, exposes non-sensitive version/feature/scale diagnostics only to the local shell, and exercises a deterministic WebGL/WebGPU capability fixture. Resize E2E confirms frame-coalesced, deduplicated geometry remains aligned; no timer-based polling or remote frame proxy was introduced. The next target is Phase 8: packaging and release readiness.
-
-## Phase 8: Packaging and release readiness (complete with release inputs pending)
-
-### Work
-
-- Add electron-builder configuration and final assets.
-- Add isolated GitHub Actions workflows for common checks and platform packaging.
-- Configure Windows signing and macOS hardened runtime, signing, and notarization through secrets.
-- Test packaged output on clean Windows and macOS environments.
-- Complete security, accessibility, release, and traceability reviews.
-
-### Exit gate
-
-- Windows x64 and macOS arm64/x64 artifacts are produced and verified.
-- Frozen install, typecheck, lint, unit, build, applicable E2E, and packaging gates pass.
-- Production artifacts contain no development endpoints, test controls, generic Electron branding, or browser leakage.
-- Release records include platform, architecture, scale, signature, and notarization evidence.
-
-The repository now has explicit electron-builder metadata, asar file inclusion rules, Windows and macOS target definitions, a documented icon-input gate, and isolated GitHub Actions quality/package workflows. The structural packaging gate is complete; signed artifacts, final product identifiers/branding, and clean-platform installation evidence remain intentionally blocked on deployment-specific release inputs.
-
-## Dependency graph
+The current local gate passes:
 
 ```text
-Product inputs + compatible toolchain
-                 │
-                 ▼
-       Pure contracts and policy
-          ┌──────┴──────┐
-          ▼             ▼
-    Secure shell     Typed IPC
-          └──────┬──────┘
-                 ▼
-       Isolated content view
-                 ▼
-       Desktop interaction
-                 ▼
-      Fixtures and full E2E
-                 ▼
-    GPU/performance validation
-                 ▼
-       Packaging and release
+18 unit-test files / 49 tests
+13 Electron E2E scenarios
+pnpm typecheck
+pnpm lint
+pnpm build
 ```
 
-## Risk register
+E2E covers frameless shell composition, content bounds, command palette,
+settings single-instance and URL switching, no-URL first run, shortcut capture,
+navigation/popup/permission/download denial, zoom, fullscreen, GPU diagnostics,
+load failure, and renderer crash recovery.
 
-| Risk                                                                         | Impact                                     | Mitigation and proof                                                                 |
-| ---------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Vite 8, electron-vite prerelease, TypeScript 7, and Electron incompatibility | Bootstrap or packaging failure             | Resolve versions together, prove clean build, pin exact versions                     |
-| `WebContentsView` bounds drift on fractional DPI                             | Gaps, overlap, or unusable content         | Pure conversion tests plus 125%/150%/Retina and mixed-monitor E2E                    |
-| Frameless behavior differs across platforms                                  | Broken resizing or non-native chrome       | Platform-specific window configuration and manual release matrix                     |
-| Authentication requires unexpected origins or popups                         | Login failure or pressure to weaken policy | Discover auth flow early; model exact origins and popup cases; retain default denial |
-| Remote page assumes browser permissions/downloads                            | Feature loss or unsafe broad grants        | Inventory required features; add only origin-scoped reviewed exceptions              |
-| Remote content crash or hang affects the shell                               | Lost recovery path                         | Separate renderers, lifecycle events, local overlays, recovery E2E                   |
-| Production accidentally inherits development controls                        | Security and browser leakage               | Independent validated flags and packaged-output tests                                |
-| macOS signing/notarization unavailable late                                  | Release delay                              | Establish credential ownership and dry-run signing before final phase                |
-| GPU behavior differs by device/driver                                        | Rendering regressions                      | Capability detection, representative smoke matrix, no speculative flags              |
+## Remaining release work
 
-## Deferred scope
+The implementation is complete for the requested keyboard-first design. The
+remaining work is deployment-specific:
 
-The following are not part of version 1 unless the normative specification is changed:
+- approve final product name, identifiers, icon, and branding assets;
+- provide production workspace and reviewed authentication/support origins;
+- validate packaged Windows 11 x64 and macOS arm64/x64 behavior on clean
+  machines and mixed-DPI displays;
+- configure signing/notarization credentials and verify release artifacts; and
+- collect manual native context-menu, frameless-resize, traffic-light, and
+  platform-menu evidence.
 
-- multiple documents, tabs, or content views;
-- browser history, bookmarks, omnibox behavior, or extensions;
-- unrestricted browsing or popup windows;
-- automatic updates;
-- Windows arm64 artifacts;
-- macOS universal artifacts;
-- whole-window screenshot capture if native complications push it to version 1.1;
-- permissions, downloads, camera/microphone, or device APIs without an approved feature; and
-- shell routing or global state libraries without a demonstrated need.
-
-## Implementation handoff checklist
-
-Before starting Phase 0, confirm:
-
-- [ ] The unresolved product inputs at the top of this document have owners or explicit deferrals.
-- [ ] `SPEC.md` is accepted as the normative baseline.
-- [ ] Security defaults and non-browser scope are understood.
-- [ ] Required Windows and macOS test access is available or planned.
-- [ ] Signing/notarization responsibilities are known before release work.
-
-The implementation phases are complete through the reproducible packaging structure. Remaining work is deployment-specific: approve the final product identifier and branding, provide protected signing/notarization credentials, and collect clean Windows/macOS installation and display-matrix evidence before labeling artifacts as releases.
+No release input may weaken the origin, preload, permission, download, popup,
+or keyboard constraints.
