@@ -147,10 +147,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
       logger.info('Denied content popup', { reason: decision.reason });
       return { action: 'deny' };
     };
-    const handleContextMenu = (
-      event: Electron.Event,
-      params: Electron.ContextMenuParams,
-    ): void => {
+    const handleContextMenu = (event: Electron.Event, params: Electron.ContextMenuParams): void => {
       event.preventDefault();
       onContextMenu?.(params, webContents);
     };
@@ -235,7 +232,13 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
       webContents.removeListener('responsive', handleResponsive);
     };
 
-    return { generation: resourceGeneration, view, webContents, removeSessionPolicies, removeListeners };
+    return {
+      generation: resourceGeneration,
+      view,
+      webContents,
+      removeSessionPolicies,
+      removeListeners,
+    };
   };
 
   const loadResources = async (target: ViewResources, url: string): Promise<void> => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { createCommandDefinitions, shortcutBindingKey } from '../../src/shared/commands';
 import {
-  createCommandDefinitions,
-  shortcutBindingKey,
-} from '../../src/shared/commands';
-import { createCommandRegistry, validateCommandOverrides } from '../../src/main/commands/command-registry';
+  createCommandRegistry,
+  validateCommandOverrides,
+} from '../../src/main/commands/command-registry';
 import { validateShortcutBinding } from '../../src/main/security/preferences-validation';
 
 describe('command registry contracts', () => {
@@ -19,9 +19,9 @@ describe('command registry contracts', () => {
 
   it('rejects unsafe shortcut shapes', () => {
     expect(validateShortcutBinding({ code: 'KeyK', modifiers: [] }).success).toBe(false);
-    expect(validateShortcutBinding({ code: 'KeyK', modifiers: ['control', 'control'] }).success).toBe(
-      false,
-    );
+    expect(
+      validateShortcutBinding({ code: 'KeyK', modifiers: ['control', 'control'] }).success,
+    ).toBe(false);
     expect(validateShortcutBinding({ code: 'F11', modifiers: [] })).toMatchObject({
       success: true,
       value: { code: 'F11', modifiers: [] },
@@ -74,8 +74,8 @@ describe('command registry contracts', () => {
   });
 
   it('normalizes modifier order for stable persistence keys', () => {
-    expect(
-      shortcutBindingKey({ code: 'KeyK', modifiers: ['shift', 'control'] }),
-    ).toBe(shortcutBindingKey({ code: 'KeyK', modifiers: ['control', 'shift'] }));
+    expect(shortcutBindingKey({ code: 'KeyK', modifiers: ['shift', 'control'] })).toBe(
+      shortcutBindingKey({ code: 'KeyK', modifiers: ['control', 'shift'] }),
+    );
   });
 });

@@ -90,12 +90,14 @@ export function createPreferencesStore(
     }
     current = sanitized.preferences;
     const snapshot = current;
-    pendingWrite = pendingWrite.catch(() => undefined).then(async () => {
-      await mkdir(dirname(preferencesPath), { recursive: true });
-      const temporaryPath = `${preferencesPath}.tmp`;
-      await writeFile(temporaryPath, JSON.stringify(snapshot), 'utf8');
-      await rename(temporaryPath, preferencesPath);
-    });
+    pendingWrite = pendingWrite
+      .catch(() => undefined)
+      .then(async () => {
+        await mkdir(dirname(preferencesPath), { recursive: true });
+        const temporaryPath = `${preferencesPath}.tmp`;
+        await writeFile(temporaryPath, JSON.stringify(snapshot), 'utf8');
+        await rename(temporaryPath, preferencesPath);
+      });
     await pendingWrite;
     return snapshot;
   };

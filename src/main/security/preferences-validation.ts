@@ -11,7 +11,8 @@ import { isCommandId, shortcutBindingKey } from '../../shared/commands';
 import { validatePersistedWindowState } from './ipc-validation';
 
 const shortcutModifiers = new Set<ShortcutModifier>(['alt', 'control', 'meta', 'shift']);
-const shortcutCodes = /^(?:Key[A-Z]|Digit[0-9]|F(?:[1-9]|1[0-2])|Comma|Equal|Minus|Period|Slash|Semicolon|Quote|BracketLeft|BracketRight|Backslash|Backquote|Enter|Space|Tab|Backspace|Delete|Home|End|PageUp|PageDown|Arrow(?:Up|Down|Left|Right))$/;
+const shortcutCodes =
+  /^(?:Key[A-Z]|Digit[0-9]|F(?:[1-9]|1[0-2])|Comma|Equal|Minus|Period|Slash|Semicolon|Quote|BracketLeft|BracketRight|Backslash|Backquote|Enter|Space|Tab|Backspace|Delete|Home|End|PageUp|PageDown|Arrow(?:Up|Down|Left|Right))$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -65,7 +66,10 @@ export function normalizeWorkspaceUrl(value: unknown): ValidationResult<string> 
   } catch {
     return { success: false, error: 'Workspace URL must be a valid URL.' };
   }
-  if ((parsed.protocol !== 'https:' && parsed.protocol !== 'http:') || parsed.hostname.length === 0) {
+  if (
+    (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
+    parsed.hostname.length === 0
+  ) {
     return { success: false, error: 'Workspace URL must use HTTP(S) and include a host.' };
   }
   if (parsed.username || parsed.password) {
@@ -80,7 +84,10 @@ export interface SanitizedPreferences {
 }
 
 export function validateSettingsDraft(input: unknown): ValidationResult<SettingsDraft> {
-  if (!isRecord(input) || Object.keys(input).some((key) => key !== 'workspaceUrl' && key !== 'shortcuts')) {
+  if (
+    !isRecord(input) ||
+    Object.keys(input).some((key) => key !== 'workspaceUrl' && key !== 'shortcuts')
+  ) {
     return { success: false, error: 'Settings draft contains an unknown field.' };
   }
   const workspaceUrl = normalizeWorkspaceUrl(input.workspaceUrl);

@@ -1,8 +1,4 @@
-import type {
-  CommandId,
-  ShortcutBinding,
-  ShortcutModifier,
-} from './types';
+import type { CommandId, ShortcutBinding, ShortcutModifier } from './types';
 
 export type CommandScope = 'application' | 'settings';
 export type SupportedPlatform = 'darwin' | 'win32';
@@ -79,7 +75,9 @@ function platformWindowBinding(
   return binding(code, shift ? ['alt', 'shift'] : ['alt']);
 }
 
-export function createCommandDefinitions(platform: SupportedPlatform): readonly CommandDefinition[] {
+export function createCommandDefinitions(
+  platform: SupportedPlatform,
+): readonly CommandDefinition[] {
   return [
     {
       id: 'settings.open',
@@ -279,7 +277,11 @@ export function formatShortcutBinding(
       ? { alt: '⌥', control: '⌃', meta: '⌘', shift: '⇧' }
       : { alt: 'Alt+', control: 'Ctrl+', meta: 'Meta+', shift: 'Shift+' };
   const modifierText = [...bindingValue.modifiers]
-    .sort((left, right) => ['control', 'meta', 'alt', 'shift'].indexOf(left) - ['control', 'meta', 'alt', 'shift'].indexOf(right))
+    .sort(
+      (left, right) =>
+        ['control', 'meta', 'alt', 'shift'].indexOf(left) -
+        ['control', 'meta', 'alt', 'shift'].indexOf(right),
+    )
     .map((modifier) => modifierLabels[modifier])
     .join(platform === 'darwin' ? '' : '');
   const keyLabels: Record<string, string> = {
@@ -305,7 +307,11 @@ export function toElectronAccelerator(
       ? { alt: 'Alt', control: 'Ctrl', meta: 'Command', shift: 'Shift' }
       : { alt: 'Alt', control: 'Ctrl', meta: 'Super', shift: 'Shift' };
   const modifiers = [...bindingValue.modifiers]
-    .sort((left, right) => ['control', 'meta', 'alt', 'shift'].indexOf(left) - ['control', 'meta', 'alt', 'shift'].indexOf(right))
+    .sort(
+      (left, right) =>
+        ['control', 'meta', 'alt', 'shift'].indexOf(left) -
+        ['control', 'meta', 'alt', 'shift'].indexOf(right),
+    )
     .map((modifier) => modifierLabels[modifier]);
   const keyLabels: Record<string, string> = {
     Comma: ',',

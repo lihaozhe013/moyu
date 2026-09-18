@@ -32,9 +32,7 @@ function isCapturePayload(input: unknown): input is { readonly active: boolean }
   );
 }
 
-export function registerSettingsIpcHandlers(
-  dependencies: SettingsIpcDependencies,
-): () => void {
+export function registerSettingsIpcHandlers(dependencies: SettingsIpcDependencies): () => void {
   ipcMain.handle(IPC_CHANNELS.settingsGetSnapshot, (event) => {
     const settingsWindow = dependencies.getWindow();
     if (settingsWindow === null) {

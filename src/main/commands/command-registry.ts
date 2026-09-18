@@ -19,9 +19,7 @@ export interface CommandRegistry {
   readonly getBinding: (commandId: CommandId) => ShortcutBinding | undefined;
   readonly getSummaries: () => readonly CommandSummary[];
   readonly getOverrides: () => Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
-  readonly setOverrides: (
-    overrides: Readonly<Partial<Record<CommandId, ShortcutBinding>>>,
-  ) => void;
+  readonly setOverrides: (overrides: Readonly<Partial<Record<CommandId, ShortcutBinding>>>) => void;
   readonly match: (
     input: ShortcutInput,
     surface: CommandSurface,
@@ -103,7 +101,10 @@ export function createCommandRegistry(
   }
 
   const getBinding = (commandId: CommandId): ShortcutBinding | undefined => {
-    return overrides[commandId] ?? definitions.find((definition) => definition.id === commandId)?.defaultBinding;
+    return (
+      overrides[commandId] ??
+      definitions.find((definition) => definition.id === commandId)?.defaultBinding
+    );
   };
 
   const getSummaries = (): readonly CommandSummary[] => {
@@ -135,7 +136,10 @@ export function createCommandRegistry(
       for (const definition of definitions) {
         if (definition.devOnly && !allowDevelopment) {
           const binding = getBinding(definition.id);
-          if (binding !== undefined && shortcutBindingEquals(binding, shortcutBindingFromInput(input))) {
+          if (
+            binding !== undefined &&
+            shortcutBindingEquals(binding, shortcutBindingFromInput(input))
+          ) {
             return definition.id;
           }
           continue;
@@ -144,7 +148,10 @@ export function createCommandRegistry(
           continue;
         }
         const binding = getBinding(definition.id);
-        if (binding !== undefined && shortcutBindingEquals(binding, shortcutBindingFromInput(input))) {
+        if (
+          binding !== undefined &&
+          shortcutBindingEquals(binding, shortcutBindingFromInput(input))
+        ) {
           return definition.id;
         }
       }
