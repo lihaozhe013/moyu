@@ -1,4 +1,5 @@
 import type { CommandId, ShortcutBinding, ShortcutModifier } from './types';
+import defaultShortcutsJson from './shortcuts.defaults.json';
 
 export type CommandScope = 'application' | 'settings' | 'workspace';
 export type CommandActivation = 'press' | 'hold';
@@ -59,172 +60,159 @@ export function isCommandId(value: string): value is CommandId {
   return COMMAND_IDS.includes(value as CommandId);
 }
 
-function binding(code: string, modifiers: readonly ShortcutModifier[]): ShortcutBinding {
-  return { code, modifiers: [...modifiers] };
+interface ShortcutBindingJson {
+  readonly code: string;
+  readonly modifiers: readonly string[];
 }
 
-function primary(platform: SupportedPlatform, code: string, shift = false): ShortcutBinding {
-  const modifier: ShortcutModifier = platform === 'darwin' ? 'meta' : 'control';
-  return binding(code, shift ? [modifier, 'shift'] : [modifier]);
+interface CommandDefaultShortcuts {
+  readonly darwin: ShortcutBindingJson | null;
+  readonly win32: ShortcutBindingJson | null;
 }
 
-function platformWindowBinding(
-  platform: SupportedPlatform,
-  code: string,
-  shift = false,
-): ShortcutBinding {
-  if (platform === 'darwin') {
-    return binding(code, shift ? ['meta', 'shift'] : ['meta']);
+// The JSON file is the source of truth for default bindings. The annotation
+// forces compile-time completeness against `CommandId`; the paired unit test
+// validates every binding shape at test time.
+const DEFAULT_SHORTCUTS: Record<CommandId, CommandDefaultShortcuts> = defaultShortcutsJson;
+
+function shortcutBindingFromJson(value: ShortcutBindingJson | null): ShortcutBinding | undefined {
+  if (value === null) {
+    return undefined;
   }
-  return binding(code, shift ? ['alt', 'shift'] : ['alt']);
+  return { code: value.code, modifiers: value.modifiers as readonly ShortcutModifier[] };
 }
 
-function windowDragBinding(platform: SupportedPlatform): ShortcutBinding {
-  return binding('KeyZ', platform === 'darwin' ? ['meta', 'shift'] : ['control', 'shift']);
-}
+type CommandMetadata = Omit<CommandDefinition, 'defaultBinding'>;
+
+const COMMAND_METADATA: readonly CommandMetadata[] = [
+  {
+    id: 'settings.open',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'settings.save',
+    scope: 'settings',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'palette.open',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'window.minimize',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'window.toggleMaximize',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'window.close',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'app.quit',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'window.toggleFullscreen',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'content.reload',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'content.hardReload',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'content.zoomReset',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'content.zoomIn',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'content.zoomOut',
+    scope: 'application',
+    activation: 'press',
+    customizable: true,
+    devOnly: false,
+  },
+  {
+    id: 'shell.about',
+    scope: 'application',
+    activation: 'press',
+    customizable: false,
+    devOnly: false,
+  },
+  {
+    id: 'shell.gpuDiagnostics',
+    scope: 'application',
+    activation: 'press',
+    customizable: false,
+    devOnly: true,
+  },
+  {
+    id: 'devtools.open',
+    scope: 'application',
+    activation: 'press',
+    customizable: false,
+    devOnly: true,
+  },
+  {
+    id: 'window.drag',
+    scope: 'workspace',
+    activation: 'hold',
+    customizable: true,
+    devOnly: false,
+  },
+];
 
 export function createCommandDefinitions(
   platform: SupportedPlatform,
 ): readonly CommandDefinition[] {
-  return [
-    {
-      id: 'settings.open',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'Comma'),
-    },
-    {
-      id: 'settings.save',
-      scope: 'settings',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'KeyS'),
-    },
-    {
-      id: 'palette.open',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'KeyL', true),
-    },
-    {
-      id: 'window.minimize',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: platformWindowBinding(platform, 'KeyM'),
-    },
-    {
-      id: 'window.toggleMaximize',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: platformWindowBinding(platform, 'KeyM', true),
-    },
-    {
-      id: 'window.close',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'KeyW'),
-    },
-    {
-      id: 'app.quit',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'KeyQ'),
-    },
-    {
-      id: 'window.toggleFullscreen',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding:
-        platform === 'darwin' ? binding('KeyF', ['control', 'meta']) : binding('F11', []),
-    },
-    {
-      id: 'content.reload',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'KeyR'),
-    },
-    {
-      id: 'content.hardReload',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'KeyR', true),
-    },
-    {
-      id: 'content.zoomReset',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'Digit0'),
-    },
-    {
-      id: 'content.zoomIn',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'Equal', true),
-    },
-    {
-      id: 'content.zoomOut',
-      scope: 'application',
-      activation: 'press',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: primary(platform, 'Minus'),
-    },
-    {
-      id: 'shell.about',
-      scope: 'application',
-      activation: 'press',
-      customizable: false,
-      devOnly: false,
-      defaultBinding: undefined,
-    },
-    {
-      id: 'shell.gpuDiagnostics',
-      scope: 'application',
-      activation: 'press',
-      customizable: false,
-      devOnly: true,
-      defaultBinding: undefined,
-    },
-    {
-      id: 'devtools.open',
-      scope: 'application',
-      activation: 'press',
-      customizable: false,
-      devOnly: true,
-      defaultBinding: primary(platform, 'KeyI', true),
-    },
-    {
-      id: 'window.drag',
-      scope: 'workspace',
-      activation: 'hold',
-      customizable: true,
-      devOnly: false,
-      defaultBinding: windowDragBinding(platform),
-    },
-  ];
+  return COMMAND_METADATA.map((metadata) => ({
+    ...metadata,
+    defaultBinding: shortcutBindingFromJson(DEFAULT_SHORTCUTS[metadata.id][platform]),
+  }));
 }
 
 export function shortcutBindingKey(bindingValue: ShortcutBinding): string {

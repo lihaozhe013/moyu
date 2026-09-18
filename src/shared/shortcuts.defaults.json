@@ -1,0 +1,70 @@
+{
+  "settings.open": {
+    "darwin": { "code": "Comma", "modifiers": ["meta"] },
+    "win32": { "code": "Comma", "modifiers": ["control"] }
+  },
+  "settings.save": {
+    "darwin": { "code": "KeyL", "modifiers": ["meta"] },
+    "win32": { "code": "KeyL", "modifiers": ["control"] }
+  },
+  "palette.open": {
+    "darwin": { "code": "KeyO", "modifiers": ["meta", "shift"] },
+    "win32": { "code": "KeyO", "modifiers": ["control", "shift"] }
+  },
+  "window.drag": {
+    "darwin": { "code": "KeyS", "modifiers": ["meta"] },
+    "win32": { "code": "KeyS", "modifiers": ["control"] }
+  },
+  "window.toggleMaximize": {
+    "darwin": { "code": "KeyM", "modifiers": ["meta"] },
+    "win32": { "code": "KeyM", "modifiers": ["alt"] }
+  },
+  "window.close": {
+    "darwin": { "code": "KeyM", "modifiers": ["meta", "shift"] },
+    "win32": { "code": "KeyM", "modifiers": ["alt", "shift"] }
+  },
+  "window.minimize": {
+    "darwin": { "code": "KeyW", "modifiers": ["meta"] },
+    "win32": { "code": "KeyW", "modifiers": ["control"] }
+  },
+  "app.quit": {
+    "darwin": { "code": "KeyQ", "modifiers": ["meta"] },
+    "win32": { "code": "KeyQ", "modifiers": ["control"] }
+  },
+  "window.toggleFullscreen": {
+    "darwin": { "code": "KeyF", "modifiers": ["control", "meta"] },
+    "win32": { "code": "F11", "modifiers": [] }
+  },
+  "content.reload": {
+    "darwin": { "code": "KeyR", "modifiers": ["meta"] },
+    "win32": { "code": "KeyR", "modifiers": ["control"] }
+  },
+  "content.hardReload": {
+    "darwin": { "code": "KeyR", "modifiers": ["meta", "shift"] },
+    "win32": { "code": "KeyR", "modifiers": ["control", "shift"] }
+  },
+  "content.zoomReset": {
+    "darwin": { "code": "Digit0", "modifiers": ["meta"] },
+    "win32": { "code": "Digit0", "modifiers": ["control"] }
+  },
+  "content.zoomIn": {
+    "darwin": { "code": "Equal", "modifiers": ["meta", "shift"] },
+    "win32": { "code": "Equal", "modifiers": ["control", "shift"] }
+  },
+  "content.zoomOut": {
+    "darwin": { "code": "Minus", "modifiers": ["meta"] },
+    "win32": { "code": "Minus", "modifiers": ["control"] }
+  },
+  "shell.about": {
+    "darwin": null,
+    "win32": null
+  },
+  "shell.gpuDiagnostics": {
+    "darwin": null,
+    "win32": null
+  },
+  "devtools.open": {
+    "darwin": { "code": "KeyI", "modifiers": ["meta", "shift"] },
+    "win32": { "code": "KeyI", "modifiers": ["control", "shift"] }
+  }
+}
