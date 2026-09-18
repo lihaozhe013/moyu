@@ -76,16 +76,21 @@ The user preference wins after validation. `APP_ALLOWED_ORIGINS` is retained
 only as a legacy input name and must not broaden the active exact origin;
 current configuration derives the sole workspace origin from the URL.
 
-| Input                  | Development                 | Test                               | Production                                      |
-| ---------------------- | --------------------------- | ---------------------------------- | ----------------------------------------------- |
-| Workspace URL          | HTTP(S), explicit or absent | loopback fixture or explicit empty | HTTPS when saved; may start empty for first run |
-| Authentication origins | explicit reviewed values    | fixture values                     | explicit HTTPS values                           |
-| DevTools               | opt-in                      | opt-in for diagnostics             | disabled                                        |
-| Arbitrary navigation   | explicit opt-in             | controlled fixture only            | disabled                                        |
-| Session persistence    | explicit                    | isolated by test                   | product decision                                |
+| Input                  | Development                 | Test                                                                  | Production                                      |
+| ---------------------- | --------------------------- | --------------------------------------------------------------------- | ----------------------------------------------- |
+| Workspace URL          | HTTP(S), explicit or absent | loopback fixture, required public HTTPS smoke URLs, or explicit empty | HTTPS when saved; may start empty for first run |
+| Authentication origins | explicit reviewed values    | fixture values                                                        | explicit HTTPS values                           |
+| DevTools               | opt-in                      | opt-in for diagnostics                                                | disabled                                        |
+| Arbitrary navigation   | explicit opt-in             | controlled fixture only                                               | disabled                                        |
+| Session persistence    | explicit                    | isolated by test                                                      | product decision                                |
 
 Do not place credentials or secrets in `.env.example`, preferences, logs, or
 fixtures.
+
+The E2E acceptance environment must have outbound HTTPS access. Public-site
+smoke failures are not skipped or hidden; use the loopback fixture routes for
+offline diagnosis only, and report the full acceptance gate as incomplete
+until the public workspace path succeeds.
 
 ## Change workflow
 

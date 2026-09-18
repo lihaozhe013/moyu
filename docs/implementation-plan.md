@@ -78,7 +78,23 @@ pnpm build
 E2E covers frameless shell composition, content bounds, command palette,
 settings single-instance and URL switching, no-URL first run, shortcut capture,
 navigation/popup/permission/download denial, zoom, fullscreen, GPU diagnostics,
-load failure, and renderer crash recovery.
+load failure, renderer crash recovery, local edge-to-edge HTML fixtures, and
+required public HTTPS workspace smoke tests for GitHub, Wikipedia, and Mozilla.
+
+## Public network acceptance update
+
+The public-site smoke tests are part of the acceptance contract, not optional
+best-effort checks. The previous reachability preflight was removed because it
+could skip the actual Electron load and incorrectly report an offline or
+misconfigured environment as healthy.
+
+The revised gate launches each canonical public site in a fresh application
+process and requires the same ready state, exact-origin policy, remote preload
+isolation, and borderless geometry used by the configured workspace. DNS, TLS,
+proxy, firewall, captive-portal, certificate, and site-availability failures
+are visible E2E failures. Loopback fixtures remain for deterministic local
+diagnosis, but they cannot substitute for the public HTTPS gate in release
+evidence.
 
 ## Remaining release work
 

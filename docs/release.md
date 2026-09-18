@@ -163,7 +163,10 @@ Artifact checks should operate on the packaged output, not only the development 
 
 - [ ] Frozen installation succeeds.
 - [ ] Typecheck, lint, unit tests, and build pass.
-- [ ] Required E2E scenarios pass on Windows and macOS.
+- [ ] Required E2E scenarios pass on Windows and macOS, including the public
+      HTTPS workspace smoke gate on network-enabled runners.
+- [ ] No public-site E2E failure was skipped; offline or blocked runners are
+      recorded as incomplete acceptance evidence.
 - [ ] Required DPI, Retina, multi-monitor, fullscreen, and GPU checks are recorded.
 - [ ] Accessibility and no-browser-leakage checklists pass.
 - [ ] Known exceptions are explicitly approved and documented.

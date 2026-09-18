@@ -22,17 +22,18 @@ an index, not a replacement for the constraint reference.
 
 The following evidence closes multiple requirements at once:
 
-| Evidence                                            | Requirements covered                                                                      |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Frozen clean install plus manifest/lockfile review  | Toolchain, CI, scripts, dependency policy                                                 |
-| Production packaged-window capture                  | Startup, chrome, loading, layout, and no browser leakage                                  |
-| Security configuration snapshot from packaged build | Web preferences, preload, CSP, and environment controls                                   |
-| Navigation/popup/permission/download test report    | Remote containment and browser-feature denial                                             |
-| Windows scale and mixed-monitor report              | Bounds synchronization and Windows behavior                                               |
-| macOS arm64/x64 report                              | Frameless resize, hidden traffic lights, native menu/fullscreen, and architecture support |
-| Fixture-driven failure/crash report                 | Error experience, shell isolation, and recovery                                           |
-| GPU capability and idle/resize observation          | Hardware acceleration, WebGL/WebGPU behavior, and performance                             |
-| Accessibility review                                | Semantic controls, keyboard access, focus, and contrast                                   |
+| Evidence                                            | Requirements covered                                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Frozen clean install plus manifest/lockfile review  | Toolchain, CI, scripts, dependency policy                                                     |
+| Production packaged-window capture                  | Startup, chrome, loading, layout, and no browser leakage                                      |
+| Security configuration snapshot from packaged build | Web preferences, preload, CSP, and environment controls                                       |
+| Navigation/popup/permission/download test report    | Remote containment and browser-feature denial                                                 |
+| Public HTTPS workspace smoke report                 | Reachable public workspace loading, exact-origin policy, remote isolation, and shell geometry |
+| Windows scale and mixed-monitor report              | Bounds synchronization and Windows behavior                                                   |
+| macOS arm64/x64 report                              | Frameless resize, hidden traffic lights, native menu/fullscreen, and architecture support     |
+| Fixture-driven failure/crash report                 | Error experience, shell isolation, and recovery                                               |
+| GPU capability and idle/resize observation          | Hardware acceleration, WebGL/WebGPU behavior, and performance                                 |
+| Accessibility review                                | Semantic controls, keyboard access, focus, and contrast                                       |
 
 ## Maintenance rule
 

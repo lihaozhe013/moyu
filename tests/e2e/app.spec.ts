@@ -9,9 +9,9 @@ const fixtureUrl = `${fixtureOrigin}/`;
 const mainEntry = resolve('out/main/index.js');
 
 const knownWebsites = [
-  { label: 'Example Domain', url: 'https://example.com/', origin: 'https://example.com' },
-  { label: 'IANA', url: 'https://www.iana.org/', origin: 'https://www.iana.org' },
-  { label: 'W3C', url: 'https://www.w3.org/', origin: 'https://www.w3.org' },
+  { label: 'GitHub', url: 'https://github.com/', origin: 'https://github.com' },
+  { label: 'Wikipedia', url: 'https://www.wikipedia.org/', origin: 'https://www.wikipedia.org' },
+  { label: 'Mozilla', url: 'https://www.mozilla.org/', origin: 'https://www.mozilla.org' },
 ] as const;
 
 const localHtmlFixtures = [
@@ -110,19 +110,6 @@ async function assertBorderlessWorkspace(shell: Page): Promise<void> {
   expect(content.bounds.y).toBe(Math.round(contentHostBounds!.y));
   expect(content.bounds.width).toBe(Math.round(contentHostBounds!.width));
   expect(content.bounds.height).toBe(Math.round(contentHostBounds!.height));
-}
-
-async function isPublicWebsiteReachable(url: string): Promise<boolean> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    return response.status >= 200 && response.status < 500;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 async function navigateContent(url: string): Promise<void> {
@@ -229,10 +216,6 @@ for (const fixture of localHtmlFixtures) {
 for (const site of knownWebsites) {
   test(`loads ${site.label} without adding application chrome or a border`, async () => {
     test.setTimeout(75_000);
-    test.skip(
-      !(await isPublicWebsiteReachable(site.url)),
-      `Skipping ${site.label}: the public website is unavailable in this environment.`,
-    );
 
     await launchApplication(site.url);
     const shell = await application!.firstWindow();

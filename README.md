@@ -25,7 +25,8 @@ The repository includes:
 - exact-origin navigation, popup/permission/download denial, secure preload
   boundaries, generation-safe URL replacement, zoom, fullscreen, and crash
   recovery; and
-- deterministic loopback fixtures, 51 unit tests, and 20 Electron E2E tests.
+- deterministic loopback fixtures, required public HTTPS smoke coverage, 51
+  unit tests, and 20 Electron E2E tests.
 
 Product branding, signed artifacts, notarization, and clean Windows/macOS
 release evidence remain deployment inputs.
@@ -36,7 +37,9 @@ The application displays one user-configured remote workspace and does not
 provide tabs, an address bar, browser history, bookmarks, extensions,
 unrestricted navigation, or uncontrolled popups. The only URL editor is in the
 local Settings window. In production, saved workspace URLs must use HTTPS and
-contain a valid host without credentials.
+contain a valid host without credentials. A reachable public HTTPS workspace
+must load normally; this network capability does not expand the product into a
+general-purpose browser.
 
 ## Architecture at a glance
 

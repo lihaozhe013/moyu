@@ -1,9 +1,10 @@
 # Testing Strategy
 
-Tests prove both visible behavior and containment. The deterministic fixture
-never depends on the production website or public network. Supplemental public
-website smoke tests are reachability-gated so offline environments retain a
-deterministic acceptance path.
+Tests prove both visible behavior and containment. Loopback fixtures provide a
+deterministic debugging path, while public HTTPS smoke tests verify that the
+Electron content surface can behave as a normal web client. Public-site tests
+are required acceptance tests: they do not preflight with a host-side request
+and they do not skip when the network is unavailable.
 
 ## Quality gates
 
@@ -17,7 +18,9 @@ pnpm build
 ```
 
 The full acceptance gate additionally runs `pnpm test:e2e`. The current local
-baseline is 18 unit-test files / 51 tests and 20 Electron E2E scenarios.
+baseline is 18 unit-test files / 51 tests and 20 Electron E2E scenarios. The
+E2E environment must provide outbound HTTPS access; otherwise the acceptance
+run is incomplete and must fail visibly rather than be reported as passing.
 
 ## Unit and boundary coverage
 
@@ -76,13 +79,36 @@ The E2E suite verifies:
    generation; an empty first run opens Settings and focuses the URL input;
 6. shortcut capture, reset behavior, dirty/save state, and conflict feedback;
 7. no remote page receives `window.desktopAPI` or local privileges.
-8. local HTML fixtures and reachable public websites load without application
-   chrome, shell/content borders, or a mismatch between native and DOM bounds;
-   public-site checks are skipped when the environment has no network access.
+8. local HTML fixtures load without application chrome, shell/content borders,
+   or a mismatch between native and DOM bounds;
+9. GitHub, Wikipedia, and Mozilla load in fresh application processes over
+   HTTPS without an error overlay, application chrome, or a remote preload.
+   DNS/TLS/proxy/firewall/site failures fail these tests and require an
+   environment or product investigation.
 
 Native context-menu presentation is covered by an injectable template unit
 test. Windows and macOS packaged builds still require manual right-click,
 frameless resize, traffic-light hiding, menu, and mixed-DPI checks.
+
+## Public HTTPS network gate
+
+The public-site checks intentionally use the same Electron `WebContentsView`
+path as a configured workspace. They do not use a Node.js `fetch` preflight,
+because a host-side request can succeed while Electron fails due to a different
+proxy, certificate store, session, or navigation policy. Conversely, an
+unreachable site is not converted into a skip: the result means the current
+build/environment cannot satisfy the normal public-workspace contract.
+
+The canonical smoke URLs are:
+
+- `https://github.com/`
+- `https://www.wikipedia.org/`
+- `https://www.mozilla.org/`
+
+If a provider intentionally runs without outbound HTTPS, it may run the local
+fixture tests for diagnosis, but it must mark the full E2E acceptance gate as
+blocked or failed. It must not publish that run as a successful release
+verification.
 
 ## Platform matrix
 

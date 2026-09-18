@@ -52,13 +52,15 @@ The application MUST:
   Silicon and high-DPI displays;
 - use a typed, modern TypeScript codebase with reproducible builds.
 
-The product is NOT a general-purpose browser. Unless a later product decision
-explicitly changes the boundary, it MUST NOT grow browser tabs, a permanent
-address bar, bookmarks, browser history UI, extension support, omnibox
-behavior, arbitrary in-workspace browser navigation, or uncontrolled browser
-windows. Editing the single persisted workspace URL in the dedicated settings
-window is a configuration operation and MUST NOT introduce address-bar
-behavior into the primary workspace.
+The product is NOT a general-purpose browser. It MUST nevertheless behave as a
+normal HTTPS client for the one configured workspace: a reachable public HTTPS
+site MUST load successfully in the remote content surface. Unless a later
+product decision explicitly changes the boundary, it MUST NOT grow browser
+tabs, a permanent address bar, bookmarks, browser history UI, extension
+support, omnibox behavior, arbitrary in-workspace browser navigation, or
+uncontrolled browser windows. Editing the single persisted workspace URL in
+the dedicated settings window is a configuration operation and MUST NOT
+introduce address-bar behavior into the primary workspace.
 
 ## 2. Runtime and trust boundaries
 
@@ -457,8 +459,32 @@ The supported modes are `development`, `production`, and `test`:
   explicitly enabled arbitrary navigation.
 - Production uses the packaged local shell, restricted navigation, sanitized
   logs, no localhost assumptions, and DevTools off by default.
-- Tests use deterministic local fixture content and must not depend solely on a
-  live production website.
+- Tests MUST retain deterministic local fixture content and MUST also include a
+  required public-HTTPS workspace smoke gate. The public gate MUST exercise the
+  Electron content surface itself; a separate host-side reachability probe MUST
+  NOT turn an unreachable public site into a skipped or passing test.
+
+### 7.1 Public HTTPS workspace acceptance
+
+The application MUST be able to load a reachable public HTTPS workspace with a
+valid certificate, normal DNS/proxy behavior, and no application-specific
+network restriction beyond the configured exact-origin navigation policy. A
+configured public workspace failing to load is a product failure, not an
+acceptable offline variant of normal operation.
+
+The E2E acceptance set MUST contain at least three well-known public HTTPS
+origins that are maintained as canonical, non-redirecting test entry points.
+Each entry MUST be loaded in a fresh application process and MUST reach the
+normal ready state without the local error overlay, while preserving the
+frameless shell and remote-content isolation. The set MUST be reviewed when a
+site changes its canonical URL or introduces a cross-origin redirect.
+
+The external-network gate MUST fail when DNS, TLS, proxy, firewall, captive
+portal, certificate, or site availability prevents a page from loading. It MUST
+NOT silently skip, downgrade to a loopback page, or report the full acceptance
+suite as passing. Local fixture tests remain useful for deterministic debugging,
+but a run that cannot execute the public HTTPS gate is incomplete and MUST be
+reported as such.
 
 When a workspace URL is present in production, it MUST be a validated HTTPS
 URL. A production installation MAY start without a workspace URL so that first
@@ -533,9 +559,10 @@ and popup denial, reload, custom error UI, and content-renderer crash recovery
 remain required where the platform permits.
 
 CI must preserve separate install, type-check, lint, unit-test, build, E2E, and
-package gates as supported by the provider. Warnings and failures MUST remain
-visible; scripts must not hide stderr or cargo-cult obsolete Electron
-templates.
+package gates as supported by the provider. The E2E job used for acceptance MUST
+have outbound HTTPS access so the public-network gate can run. Warnings and
+failures MUST remain visible; scripts must not hide stderr or cargo-cult
+obsolete Electron templates.
 
 The hard acceptance criterion is that normal operation never leaks a visible
 close/minimize/maximize control, URL bar, tab strip, Chromium menu, default
