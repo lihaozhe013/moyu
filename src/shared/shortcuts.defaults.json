@@ -4,24 +4,24 @@
     "win32": { "code": "Comma", "modifiers": ["control"] }
   },
   "settings.save": {
-    "darwin": { "code": "KeyS", "modifiers": ["meta"] },
-    "win32": { "code": "KeyS", "modifiers": ["control"] }
+    "darwin": null,
+    "win32": null
   },
   "palette.open": {
-    "darwin": { "code": "KeyL", "modifiers": ["meta", "shift"] },
-    "win32": { "code": "KeyL", "modifiers": ["control", "shift"] }
+    "darwin": { "code": "KeyP", "modifiers": ["meta", "shift"] },
+    "win32": { "code": "KeyP", "modifiers": ["control", "shift"] }
   },
   "window.minimize": {
     "darwin": { "code": "KeyM", "modifiers": ["meta"] },
-    "win32": { "code": "KeyM", "modifiers": ["alt"] }
+    "win32": { "code": "KeyM", "modifiers": ["control"] }
   },
   "window.toggleMaximize": {
-    "darwin": { "code": "KeyM", "modifiers": ["meta", "shift"] },
-    "win32": { "code": "KeyM", "modifiers": ["alt", "shift"] }
+    "darwin": null,
+    "win32": null
   },
   "window.close": {
-    "darwin": { "code": "KeyW", "modifiers": ["meta"] },
-    "win32": { "code": "KeyW", "modifiers": ["control"] }
+    "darwin": null,
+    "win32": null
   },
   "app.quit": {
     "darwin": { "code": "KeyQ", "modifiers": ["meta"] },
@@ -60,7 +60,7 @@
     "win32": null
   },
   "devtools.open": {
-    "darwin": { "code": "KeyI", "modifiers": ["meta", "shift"] },
-    "win32": { "code": "KeyI", "modifiers": ["control", "shift"] }
+    "darwin": null,
+    "win32": null
   }
 }
