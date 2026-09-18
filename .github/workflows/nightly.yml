@@ -60,8 +60,15 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Install X11 window manager
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes openbox
+
       - name: Electron E2E acceptance
-        run: xvfb-run --auto-servernum pnpm test:e2e
+        run: |
+          xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' \
+            bash -c 'openbox --sm-disable >/tmp/professional-canvas-openbox.log 2>&1 & sleep 1; pnpm test:e2e'
 
   packages:
     name: Package ${{ matrix.name }}
