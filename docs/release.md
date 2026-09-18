@@ -61,9 +61,10 @@ Record Windows x64 and macOS arm64/x64 results when those artifacts are
 produced. Manual evidence should include frameless presentation, resizing,
 fullscreen, Settings behavior, high-DPI bounds, popup creation, permissions,
 media, and downloads using trusted pages. It should also include real native
-window movement with the default and customized hold-to-drag shortcuts,
-restoration of page input after release, and macOS traffic-light, titlebar,
-application-menu, maximize, restore, and full-screen checks.
+window movement after enabling drag mode from Settings, edge resizing while
+the mode is on, restoration of page input after disabling the mode, and macOS
+traffic-light, titlebar, application-menu, maximize, restore, and full-screen
+checks.
 
 ## Secrets and signing
 

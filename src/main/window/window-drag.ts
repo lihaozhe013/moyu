@@ -78,6 +78,7 @@ export interface WindowDragController {
 export interface WindowDragControllerOptions {
   readonly window: BrowserWindow;
   readonly getContentSurface: () => WindowDragSurface | null;
+  readonly getSettingsSurface?: () => BrowserWindow | null;
 }
 
 export function createWindowDragController(
@@ -86,32 +87,26 @@ export function createWindowDragController(
   let active = false;
   let disposed = false;
 
+  const publishToSettingsWindow = (nextActive: boolean): void => {
+    const settingsWindow = options.getSettingsSurface?.() ?? null;
+    if (settingsWindow === null || settingsWindow.isDestroyed()) {
+      return;
+    }
+    settingsWindow.webContents.send(IPC_CHANNELS.windowDragModeChanged, nextActive);
+  };
   const publish = (): void => {
     if (disposed || options.window.isDestroyed()) {
       return;
     }
     options.window.webContents.send(IPC_CHANNELS.windowDragModeChanged, active);
     options.getContentSurface()?.setWindowDragMode(active);
+    publishToSettingsWindow(active);
   };
-  const handleWindowBlur = (): void => {
-    if (active) {
-      active = false;
-      publish();
-    }
-  };
-
-  options.window.on('blur', handleWindowBlur);
 
   return {
     isActive: () => active,
     setActive: (nextActive) => {
-      if (disposed) {
-        return;
-      }
-      if (active === nextActive) {
-        if (nextActive) {
-          options.getContentSurface()?.setWindowDragMode(true);
-        }
+      if (disposed || active === nextActive) {
         return;
       }
       active = nextActive;
@@ -127,11 +122,11 @@ export function createWindowDragController(
         return;
       }
       disposed = true;
-      options.window.removeListener('blur', handleWindowBlur);
       options.getContentSurface()?.setWindowDragMode(false);
       if (!options.window.isDestroyed()) {
         options.window.webContents.send(IPC_CHANNELS.windowDragModeChanged, false);
       }
+      publishToSettingsWindow(false);
       active = false;
     },
   };

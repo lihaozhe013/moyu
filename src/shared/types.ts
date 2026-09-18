@@ -16,7 +16,6 @@ export type CommandId =
   | 'settings.open'
   | 'settings.save'
   | 'palette.open'
-  | 'window.drag'
   | 'window.minimize'
   | 'window.toggleMaximize'
   | 'window.close'
@@ -103,6 +102,7 @@ export interface LanguageState {
 export interface SettingsSnapshot {
   readonly workspaceUrl?: string;
   readonly language?: LanguageState;
+  readonly windowDragMode: boolean;
   readonly commands: readonly CommandSummary[];
   readonly shortcutOverrides: Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
 }

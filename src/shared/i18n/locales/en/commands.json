@@ -63,9 +63,5 @@
     "label": "Open Content DevTools",
     "description": "Open developer tools for the workspace content."
   },
-  "window.drag": {
-    "label": "Hold to Drag Window",
-    "description": "Hold the shortcut and drag anywhere in the workspace."
-  },
   "paletteOnly": "Palette only"
 }

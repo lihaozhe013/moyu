@@ -7,6 +7,7 @@ export interface SettingsIpcDependencies {
   readonly getSnapshot: () => SettingsSnapshot;
   readonly saveSettings: (input: unknown) => Promise<SettingsSaveResult>;
   readonly setCaptureMode: (active: boolean) => void;
+  readonly setWindowDragMode: (active: boolean) => boolean;
 }
 
 function requireSettingsSender(
@@ -23,7 +24,7 @@ function requireSettingsSender(
   return settingsWindow;
 }
 
-function isCapturePayload(input: unknown): input is { readonly active: boolean } {
+function isActivePayload(input: unknown): input is { readonly active: boolean } {
   return (
     typeof input === 'object' &&
     input !== null &&
@@ -55,10 +56,21 @@ export function registerSettingsIpcHandlers(dependencies: SettingsIpcDependencie
       throw new Error('Settings window is not available.');
     }
     requireSettingsSender(event, settingsWindow);
-    if (!isCapturePayload(input)) {
+    if (!isActivePayload(input)) {
       throw new Error('Capture mode payload is invalid.');
     }
     dependencies.setCaptureMode(input.active);
+  });
+  ipcMain.handle(IPC_CHANNELS.settingsSetWindowDragMode, (event, input: unknown) => {
+    const settingsWindow = dependencies.getWindow();
+    if (settingsWindow === null) {
+      throw new Error('Settings window is not available.');
+    }
+    requireSettingsSender(event, settingsWindow);
+    if (!isActivePayload(input)) {
+      throw new Error('Window drag mode payload is invalid.');
+    }
+    return dependencies.setWindowDragMode(input.active);
   });
   ipcMain.handle(IPC_CHANNELS.settingsClose, (event) => {
     const settingsWindow = dependencies.getWindow();
@@ -72,6 +84,7 @@ export function registerSettingsIpcHandlers(dependencies: SettingsIpcDependencie
     ipcMain.removeHandler(IPC_CHANNELS.settingsGetSnapshot);
     ipcMain.removeHandler(IPC_CHANNELS.settingsSave);
     ipcMain.removeHandler(IPC_CHANNELS.settingsSetCaptureMode);
+    ipcMain.removeHandler(IPC_CHANNELS.settingsSetWindowDragMode);
     ipcMain.removeHandler(IPC_CHANNELS.settingsClose);
   };
 }

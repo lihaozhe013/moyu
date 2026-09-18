@@ -16,10 +16,10 @@ pnpm build
 pnpm test:e2e
 ```
 
-The current suite has 18 Vitest files / 51 unit tests and 24 Electron E2E
-scenarios. Network-dependent public-site checks may fail when a site or the
-local network is unavailable; they are compatibility smoke tests rather than a
-security requirement.
+The current suite has 20 Vitest files with 62 unit tests and 26 Electron E2E
+scenarios (including fixture and mode loops). Network-dependent public-site
+checks may fail when a site or the local network is unavailable; they are
+compatibility smoke tests rather than a security requirement.
 
 ## Unit coverage
 
@@ -29,9 +29,9 @@ Unit tests cover:
 - optional first-run configuration and ignored legacy policy variables;
 - explicit boolean environment parsing;
 - versioned preference persistence and Settings validation;
-- platform-default and customizable shortcut bindings, held window-drag
-  activation, cross-surface release, geometry, zoom, content status, logging,
-  IPC, and window state; and
+- platform-default and customizable shortcut bindings, Settings-driven
+  window-drag toggling, geometry, zoom, content status, logging, IPC, and
+  window state; and
 - local shell CSP and context-menu behavior.
 
 The removed navigation-policy tests that asserted strict origins, HTTPS-only
@@ -69,8 +69,9 @@ The suite verifies:
    production modes;
 5. popup creation and permission request initiation;
 6. local HTTP fixtures and optional public HTTPS compatibility smoke pages;
-7. default and customized whole-window drag shortcuts, workspace-only scope,
-   temporary frame styles, release/blur cleanup, and restored page clicking;
+7. the Settings drag mode toggle, temporary frame styles, restored page
+   clicking, state sync through the settings snapshot and push events, and
+   clearing when a workspace URL change replaces the content view;
 8. the absence of the local `desktopAPI` bridge in remote content while the
    configured Node/Electron runtime remains available.
 
@@ -82,11 +83,12 @@ must use the same content policy.
 
 On supported Windows and macOS systems, manually check frameless resize,
 fullscreen, hidden native buttons, Settings focus, high-DPI placement, media,
-geolocation, popup windows, and downloads with a trusted fixture page. Hold the
-default and a customized drag shortcut and confirm that a real left-button drag
-moves the native window, while ordinary page clicking, text selection, and
-scrolling return after release. Also check reload, navigation, content-view
-replacement, maximize, restore, and full-screen transitions.
+geolocation, popup windows, and downloads with a trusted fixture page. Enable
+drag mode from Settings and confirm that a real left-button drag moves the
+native window and the edges resize it, that ordinary page clicking, text
+selection, and scrolling return after disabling the mode, and that the toggle
+state stays in sync across reload, navigation, and content-view replacement.
+Also check maximize, restore, and full-screen transitions.
 
 Electron's synthetic `WebContents.sendInputEvent` coverage verifies mode
 transitions and restored page input but does not prove native OS window

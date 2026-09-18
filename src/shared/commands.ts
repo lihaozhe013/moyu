@@ -2,7 +2,7 @@ import type { CommandId, ShortcutBinding, ShortcutModifier } from './types';
 import defaultShortcutsJson from './shortcuts.defaults.json';
 
 export type CommandScope = 'application' | 'settings' | 'workspace';
-export type CommandActivation = 'press' | 'hold';
+export type CommandActivation = 'press';
 export type SupportedPlatform = 'darwin' | 'win32';
 
 // Localized text is resolved by callers through the `commands` i18n namespace,
@@ -40,7 +40,6 @@ export const COMMAND_IDS: readonly CommandId[] = [
   'settings.open',
   'settings.save',
   'palette.open',
-  'window.drag',
   'window.minimize',
   'window.toggleMaximize',
   'window.close',
@@ -196,13 +195,6 @@ const COMMAND_METADATA: readonly CommandMetadata[] = [
     activation: 'press',
     customizable: false,
     devOnly: true,
-  },
-  {
-    id: 'window.drag',
-    scope: 'workspace',
-    activation: 'hold',
-    customizable: true,
-    devOnly: false,
   },
 ];
 

@@ -30,6 +30,7 @@ export const IPC_CHANNELS = {
   settingsGetSnapshot: 'settings:get-snapshot',
   settingsSave: 'settings:save',
   settingsSetCaptureMode: 'settings:set-capture-mode',
+  settingsSetWindowDragMode: 'settings:set-window-drag-mode',
   settingsClose: 'settings:close',
   settingsSaveRequested: 'settings:save-requested',
   settingsCloseRequested: 'settings:close-requested',
@@ -93,6 +94,8 @@ export interface SettingsAPI {
       draft: import('./types').SettingsDraft,
     ) => Promise<import('./types').SettingsSaveResult>;
     readonly setCaptureMode: (active: boolean) => Promise<void>;
+    readonly setWindowDragMode: (active: boolean) => Promise<boolean>;
+    readonly onWindowDragModeChanged: (listener: (active: boolean) => void) => () => void;
     readonly close: () => Promise<void>;
     readonly onSaveRequest: (listener: () => void) => () => void;
     readonly onCloseRequest: (listener: () => void) => () => void;

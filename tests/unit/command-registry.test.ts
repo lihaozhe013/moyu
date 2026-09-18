@@ -16,16 +16,10 @@ describe('command registry contracts', () => {
     expect(macMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['meta'] });
     expect(windowsMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['alt'] });
 
-    expect(mac.find((definition) => definition.id === 'window.drag')).toMatchObject({
-      scope: 'workspace',
-      activation: 'hold',
-      defaultBinding: { code: 'KeyZ', modifiers: ['meta', 'shift'] },
-    });
-    expect(windows.find((definition) => definition.id === 'window.drag')).toMatchObject({
-      scope: 'workspace',
-      activation: 'hold',
-      defaultBinding: { code: 'KeyZ', modifiers: ['control', 'shift'] },
-    });
+    const macIds: readonly string[] = mac.map((definition) => definition.id);
+    const windowsIds: readonly string[] = windows.map((definition) => definition.id);
+    expect(macIds).not.toContain('window.drag');
+    expect(windowsIds).not.toContain('window.drag');
   });
 
   it('rejects unsafe shortcut shapes', () => {
@@ -88,7 +82,7 @@ describe('command registry contracts', () => {
         'workspace',
         false,
       ),
-    ).toBe('window.drag');
+    ).toBeUndefined();
     expect(
       registry.match(
         { code: 'KeyZ', alt: false, control: true, meta: false, shift: true },
@@ -96,7 +90,7 @@ describe('command registry contracts', () => {
         false,
       ),
     ).toBeUndefined();
-    expect(registry.getActivation('window.drag')).toBe('hold');
+    expect(registry.getActivation('content.reload')).toBe('press');
   });
 
   it('normalizes modifier order for stable persistence keys', () => {

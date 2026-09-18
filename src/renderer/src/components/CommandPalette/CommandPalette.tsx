@@ -32,9 +32,8 @@ export function CommandPalette({
 
   const visibleCommands = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    const pressCommands = commands.filter((command) => command.activation === 'press');
-    if (normalized.length === 0) return pressCommands;
-    return pressCommands.filter((command) => commandSearchText(i18n, command).includes(normalized));
+    if (normalized.length === 0) return commands;
+    return commands.filter((command) => commandSearchText(i18n, command).includes(normalized));
   }, [commands, i18n, query]);
 
   if (!open) {

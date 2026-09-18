@@ -165,6 +165,65 @@ select.text-input {
   font-size: 11px !important;
 }
 
+.window-drag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  background: #202020;
+}
+
+.window-drag-row__status {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.window-drag-row__status .field-label {
+  margin-bottom: 0;
+}
+
+.window-drag-row__state {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.window-drag-row__state--active {
+  color: #a1b5ff;
+}
+
+.window-drag-row__toggle {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.window-drag-row__toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.window-drag-row__toggle--active {
+  border-color: #8ea8ff;
+  background: #7e9dff;
+  color: #10131f;
+  font-weight: 600;
+}
+
+.window-drag-row__toggle--active:hover {
+  background: #a1b5ff;
+}
+
 .shortcut-list {
   margin-top: 14px;
   border: 1px solid rgba(255, 255, 255, 0.09);

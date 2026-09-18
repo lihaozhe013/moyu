@@ -26,19 +26,23 @@ match the host rectangle, including on high-DPI displays and after resizing.
 
 ## Whole-window dragging
 
-The main workspace has a customizable hold-to-drag shortcut. Its default is
-`⌘⇧Z` on macOS and `Ctrl+Shift+Z` on Windows/Linux. The command is
-workspace-scoped and is not shown in the command palette.
+The Settings window has a mouse-driven drag mode toggle. Keyboard shortcuts do
+not participate in drag mode at all: the mode starts and ends only when the
+toggle is pressed, so a lost key event can never strand the shell in drag mode.
 
-While the shortcut is held, pressing and dragging the left mouse button
-anywhere in the workspace moves the frameless window. The gesture is consumed
-by the native window drag while the shortcut is held. Releasing the complete
-shortcut restores normal page clicking, text selection, and scrolling. Settings
-does not enter this mode and remains a normal form window.
+While drag mode is on, pressing and dragging the left mouse button anywhere in
+the workspace moves the frameless window, and the window edges keep their
+native resize behavior. The gesture is consumed by the native window drag.
+Pressing the toggle again restores normal page clicking, text selection, and
+scrolling. Settings itself never enters drag mode and remains a normal form
+window.
 
-The drag styling is temporary. It is removed on shortcut release or window
-focus loss and is reapplied to the remote document and its child frames after a
-reload, navigation, or content-view replacement.
+The drag styling is temporary and honest about its state: Settings renders the
+actual mode through the typed snapshot and push events. The mode is reapplied
+to the remote document and its child frames after a reload or navigation, and
+it clears when a saved workspace URL change replaces the content view or the
+window is destroyed. It does not clear on focus loss, so the toggle and the
+real mode cannot disagree.
 
 ## Startup and workspace URL
 
@@ -60,16 +64,16 @@ ready.
 The existing command registry provides reload, hard reload, zoom, fullscreen,
 Settings, command palette, diagnostics, and window presentation actions. These
 commands remain application features and are independent of the remote page's
-Node/Electron capabilities. The window-drag command is the one held-mode
-exception and is handled only by the main process.
+Node/Electron capabilities. Every command is a one-shot press action; window
+dragging is not a registered command.
 
 ## Settings window
 
 Settings is a separate local, modeless, frameless window. It is single-instance,
 keyboard-operable, and remains visible after saving a workspace URL. Shortcut
 editing and conflict feedback continue to use the existing typed Settings IPC
-contract. Settings has no persistent top drag strip and never responds to the
-workspace window-drag shortcut.
+contract. Settings has no persistent top drag strip, never responds to a
+window-drag shortcut, and owns the drag mode toggle for the main workspace.
 
 ## Language
 

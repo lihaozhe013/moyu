@@ -215,7 +215,6 @@ export default function App(): React.JSX.Element {
       );
       if (command === undefined) return;
       event.preventDefault();
-      if (command.activation === 'hold') return;
       if (command.id === 'palette.open') {
         setPaletteOpen(true);
       } else {

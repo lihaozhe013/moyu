@@ -63,9 +63,5 @@
     "label": "打开内容 DevTools",
     "description": "打开工作区内容的开发者工具。"
   },
-  "window.drag": {
-    "label": "按住以拖动窗口",
-    "description": "按住快捷键并在工作区任意位置拖动。"
-  },
   "paletteOnly": "仅面板"
 }

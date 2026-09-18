@@ -87,8 +87,6 @@ status, layout, diagnostics, and window presentation. Settings receives the
 existing preference operations. The remote page does not need `DesktopAPI` or
 the local preload to use its Node/Electron runtime.
 
-## Window drag controller
-
 ## Internationalization
 
 Shared locale resources under `src/shared/i18n/locales/{en,zh-CN}` are bundled
@@ -102,18 +100,17 @@ re-renders with the returned snapshot.
 
 ## Window drag controller
 
-`shortcuts.ts` listens for both `keyDown` and `keyUp` events in the main
-process. The shell and remote `WebContentsView` handlers share one held-binding
-state so a focus change between the two surfaces cannot leave duplicate or
-stale activations. The command registry marks `window.drag` as `hold` and
-`workspace` scoped; Settings therefore cannot activate it.
-
-`window-drag.ts` owns the native window-drag state. It publishes an internal
-IPC event to the local shell and asks `content-view.ts` to inject a temporary
-`-webkit-app-region: drag` style into the remote document and every loaded
-subframe. The content controller serializes these injections, ignores stale
-content generations, reapplies the style after frame loads, and removes it on
-release or teardown. The implementation deliberately does not use
+`window-drag.ts` owns the native window-drag state. There is no drag shortcut:
+the mode starts and ends only through the Settings toggle, which invokes the
+sender-validated `settings:set-window-drag-mode` IPC handler. The controller
+publishes an internal IPC event to the local shell and the Settings window and
+asks `content-view.ts` to inject a temporary `-webkit-app-region: drag` style
+into the remote document and every loaded subframe. The content controller
+serializes these injections, ignores stale content generations, reapplies the
+style after frame loads, and removes it on toggle-off or teardown. The mode
+clears when a saved workspace URL change replaces the content view or the
+window is destroyed; it deliberately survives focus loss so the Settings
+toggle and the real mode can never disagree. The implementation does not use
 `setIgnoreMouseEvents`, preserving page input whenever drag mode is inactive.
 
 `create-main-window.ts` and `create-settings-window.ts` keep frameless,
@@ -133,7 +130,7 @@ src/
 │   ├── ipc/             typed channels and handlers
 │   ├── preferences/     persisted settings
 │   ├── security/        configuration, session, and boundary validation
-│   ├── shortcuts/       keyboard handling and held modes
+│   ├── shortcuts/       keyboard handling and shortcut cleanup
 │   └── window/          native windows, content view, layout, drag, and recovery
 ├── preload/              local shell and Settings bridges
 ├── renderer/             local shell and Settings UI

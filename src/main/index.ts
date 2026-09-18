@@ -160,8 +160,6 @@ async function createApplicationWindow(): Promise<void> {
           contentView?.webContents.openDevTools({ mode: 'detach' });
         }
         return;
-      case 'window.drag':
-        return;
       case 'palette.open':
       case 'shell.about':
       case 'shell.gpuDiagnostics':
@@ -205,8 +203,6 @@ async function createApplicationWindow(): Promise<void> {
       commandRegistry,
       {
         executeCommand,
-        setHoldMode: (active) => windowDragController?.setActive(active),
-        isHoldModeActive: () => windowDragController?.isActive() ?? false,
         dismissOverlays: () => {
           contentView?.setOverlayVisible(false);
           currentWindow.webContents.send(IPC_CHANNELS.commandPaletteClose);
@@ -343,6 +339,7 @@ async function createApplicationWindow(): Promise<void> {
         ? {}
         : { workspaceUrl: activeConfig.content.initialUrl }),
       language: getLanguageState(),
+      windowDragMode: windowDragController?.isActive() ?? false,
       commands: registry
         .getSummaries()
         .filter(
@@ -360,6 +357,7 @@ async function createApplicationWindow(): Promise<void> {
   windowDragController = createWindowDragController({
     window: restoredWindow,
     getContentSurface: () => contentView,
+    getSettingsSurface: () => settingsWindow?.window ?? null,
   });
   let lastBounds = restoredWindow.getBounds();
   lastWindowedBounds = lastBounds;
@@ -426,6 +424,10 @@ async function createApplicationWindow(): Promise<void> {
     saveSettings,
     setCaptureMode: (active) => {
       settingsCapturing = active;
+    },
+    setWindowDragMode: (active) => {
+      windowDragController?.setActive(active);
+      return windowDragController?.isActive() ?? false;
     },
   });
 

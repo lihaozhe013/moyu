@@ -40,6 +40,7 @@ function SettingsApp(): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [workspaceUrl, setWorkspaceUrl] = useState('');
   const [language, setLanguage] = useState<LanguagePreference>('system');
+  const [windowDragMode, setWindowDragMode] = useState(false);
   const [shortcuts, setShortcuts] = useState<Partial<Record<CommandId, ShortcutBinding>>>({});
   const [search, setSearch] = useState('');
   const [captureCommand, setCaptureCommand] = useState<CommandId | null>(null);
@@ -64,7 +65,9 @@ function SettingsApp(): React.JSX.Element {
       .then((next) => {
         setSnapshot(next);
         setWorkspaceUrl(next.workspaceUrl ?? '');
+        setWindowDragMode(next.windowDragMode);
         setShortcuts({ ...next.shortcutOverrides });
+        applyLanguageState(next.language);
         applyLanguageState(next.language);
         setDirty(false);
         setFieldErrors({});
@@ -80,6 +83,12 @@ function SettingsApp(): React.JSX.Element {
 
   useEffect(() => {
     reloadSnapshot();
+  }, []);
+
+  useEffect(() => {
+    const api = window.settingsAPI;
+    if (api === undefined) return;
+    return api.settings.onWindowDragModeChanged((active) => setWindowDragMode(active));
   }, []);
 
   useEffect(() => {
@@ -171,6 +180,16 @@ function SettingsApp(): React.JSX.Element {
     updateDraft();
   }
 
+  async function toggleWindowDragMode(): Promise<void> {
+    const api = window.settingsAPI;
+    if (api === undefined) return;
+    try {
+      setWindowDragMode(await api.settings.setWindowDragMode(!windowDragMode));
+    } catch {
+      setNotice(t('notices.dragModeFailed'));
+    }
+  }
+
   async function saveSettings(): Promise<void> {
     if (snapshot === null || captureCommand !== null) return;
     const api = window.settingsAPI;
@@ -187,6 +206,7 @@ function SettingsApp(): React.JSX.Element {
       }
       setSnapshot(result.snapshot);
       setWorkspaceUrl(result.snapshot.workspaceUrl ?? workspaceUrl);
+      setWindowDragMode(result.snapshot.windowDragMode);
       setShortcuts({ ...result.snapshot.shortcutOverrides });
       applyLanguageState(result.snapshot.language);
       setDirty(false);
@@ -280,6 +300,35 @@ function SettingsApp(): React.JSX.Element {
           {fieldErrors.workspaceUrl ? (
             <p className="field-error">{fieldErrors.workspaceUrl}</p>
           ) : null}
+        </section>
+
+        <section className="settings-section" aria-labelledby="window-heading">
+          <div className="settings-section__heading">
+            <div>
+              <h2 id="window-heading">{t('windowHeading')}</h2>
+              <p>{t('windowHelp')}</p>
+            </div>
+          </div>
+          <div className="window-drag-row">
+            <div className="window-drag-row__status" role="status">
+              <span className="field-label">{t('windowDragStatusLabel')}</span>
+              <strong
+                className={`window-drag-row__state${
+                  windowDragMode ? ' window-drag-row__state--active' : ''
+                }`}
+              >
+                {windowDragMode ? t('windowDragActive') : t('windowDragInactive')}
+              </strong>
+            </div>
+            <button
+              type="button"
+              className={`window-drag-row__toggle${windowDragMode ? ' window-drag-row__toggle--active' : ''}`}
+              aria-pressed={windowDragMode}
+              onClick={() => void toggleWindowDragMode()}
+            >
+              {windowDragMode ? t('windowDragDisable') : t('windowDragEnable')}
+            </button>
+          </div>
         </section>
 
         <section className="settings-section" aria-labelledby="language-heading">

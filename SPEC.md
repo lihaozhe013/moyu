@@ -114,24 +114,28 @@ After a successful Settings save:
 Resizing, reload, and changing the URL a second time MUST preserve that
 alignment behavior.
 
-The command registry MUST define a customizable `window.drag` command with a
-`hold` activation and `workspace` scope. Its default binding MUST be
-`Cmd+Shift+Z` on macOS and `Ctrl+Shift+Z` on Windows/Linux. The
-command MUST be excluded from the command palette because it is a held mode,
-not a one-shot command.
+The command registry MUST NOT define a window drag shortcut command.
+Whole-window dragging MUST be activated only through a mouse-driven toggle in
+the Settings window; keyboard holds and releases MUST NOT participate in the
+drag mode state machine.
 
-While the configured `window.drag` binding is held in the main workspace, a
-left-button press and drag anywhere in the window MUST move the frameless
-window. The temporary drag mode MUST apply to the local shell and every loaded
-frame of the remote workspace, including after reload, navigation, or content
-view replacement. Releasing the binding MUST immediately remove the temporary
-drag mode so page clicking, text selection, and scrolling work normally again.
-The mode MUST also clear when the window loses focus, the content view is
-replaced, or the window is destroyed.
+While the Settings drag mode toggle is active, a left-button press and drag
+anywhere in the main workspace MUST move the frameless window, and the window
+edges MUST keep their native resize behavior. The temporary drag mode MUST
+apply to the local shell and every loaded frame of the remote workspace,
+including after reload, navigation, or content view replacement. Activating
+the toggle again MUST immediately remove the temporary drag mode so page
+clicking, text selection, and scrolling work normally again.
 
-The same binding MUST have no effect in Settings. The implementation MUST NOT
-use `setIgnoreMouseEvents` for this behavior, because that would break normal
-page input and scrolling outside the temporary drag mode.
+The Settings UI MUST render the actual drag mode state. The initial state MUST
+come from the typed settings snapshot and later changes MUST arrive as push
+events. The mode MUST clear when the content view is replaced by a saved
+workspace URL change or when the window is destroyed, and that clearing MUST
+be reflected in Settings. The mode MUST NOT clear on window focus loss, so the
+Settings toggle and the real mode can never disagree.
+
+The implementation MUST NOT use `setIgnoreMouseEvents` for this behavior,
+because that would break normal page input and scrolling outside drag mode.
 
 The application MUST remove its registered application menu. The macOS system
 menu bar and Apple menu remain operating-system behavior and are outside this

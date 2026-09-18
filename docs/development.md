@@ -31,9 +31,9 @@ does in a packaged build.
 - `src/main/window/content-view.ts` owns the workspace `WebContentsView`, URL
   replacement, loading state, popup configuration, and native bounds.
 - `src/main/window/window-drag.ts` owns temporary whole-window drag state and
-  synchronizes drag styling across local and remote surfaces.
-- `src/main/shortcuts/shortcuts.ts` owns main-process key-down/key-up matching,
-  hold-mode scope, and shortcut cleanup.
+  synchronizes drag styling across local, remote, and Settings surfaces.
+- `src/main/shortcuts/shortcuts.ts` owns main-process key-down matching and
+  shortcut cleanup.
 - `src/main/security/config.ts` owns runtime configuration parsing.
 - `src/main/security/session.ts` owns the content session.
 - `src/main/security/preferences-validation.ts` owns the minimum URL and
@@ -86,10 +86,10 @@ fixture needs them.
 4. Update English documentation when behavior or configuration changes.
 5. Run typecheck, lint, unit tests, build, and the relevant E2E tests.
 
-When changing held shortcuts or frameless-window behavior, include the
-platform default, Settings customization, workspace-only scope, focus-loss
-cleanup, content reload/navigation, and manual native-window movement in the
-verification record.
+When changing window-drag behavior or frameless-window behavior, include the
+Settings toggle round-trip, snapshot and push-event state sync, content
+reload/navigation, URL-change cleanup, and manual native-window movement and
+resizing in the verification record.
 
 Do not add allowlists, denial fallbacks, origin branches, HTTPS-only checks,
 permission gates, popup gates, download interception, or other defensive
