@@ -114,6 +114,8 @@ async function assertBorderlessWorkspace(shell: Page): Promise<void> {
   const contentHostBounds = await shell.locator('.content-host').boundingBox();
   const content = await readContentSnapshot();
   expect(contentHostBounds).not.toBeNull();
+  expect(contentHostBounds!.x).toBe(0);
+  expect(contentHostBounds!.y).toBe(0);
   expect(content.bounds.x).toBe(Math.round(contentHostBounds!.x));
   expect(content.bounds.y).toBe(Math.round(contentHostBounds!.y));
   expect(content.bounds.width).toBe(Math.round(contentHostBounds!.width));
@@ -156,6 +158,61 @@ async function executeContent(script: string): Promise<unknown> {
     }
     return child.webContents.executeJavaScript(source);
   }, script);
+}
+
+async function sendWorkspaceKey(
+  type: 'keyDown' | 'keyUp',
+  modifiers: readonly ('alt' | 'control' | 'meta' | 'shift')[],
+  keyCode = 'Space',
+): Promise<void> {
+  if (application === undefined) {
+    throw new Error('Electron application is not running.');
+  }
+
+  await application.evaluate(
+    ({ BrowserWindow }, input) => {
+      const window = BrowserWindow.getAllWindows().find((candidate) =>
+        candidate.webContents.getURL().includes('/renderer/index.html'),
+      );
+      window?.webContents.sendInputEvent({ ...input, modifiers: [...input.modifiers] });
+    },
+    { type, keyCode, modifiers },
+  );
+}
+
+async function blurWorkspaceWindow(): Promise<void> {
+  if (application === undefined) {
+    throw new Error('Electron application is not running.');
+  }
+
+  await application.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows().find((candidate) =>
+      candidate.webContents.getURL().includes('/renderer/index.html'),
+    );
+    window?.blur();
+  });
+}
+
+async function sendContentMouse(
+  type: 'mouseDown' | 'mouseMove' | 'mouseUp',
+  x: number,
+  y: number,
+): Promise<void> {
+  if (application === undefined) {
+    throw new Error('Electron application is not running.');
+  }
+
+  await application.evaluate(
+    ({ BrowserWindow }, input) => {
+      const window = BrowserWindow.getAllWindows().find((candidate) =>
+        candidate.webContents.getURL().includes('/renderer/index.html'),
+      );
+      const child = window?.contentView.children[0] as
+        { webContents?: { sendInputEvent: (event: unknown) => void } } | undefined;
+      child?.webContents?.sendInputEvent(input);
+    },
+    { type, x, y, button: 'left', clickCount: type === 'mouseDown' ? 1 : undefined },
+  );
 }
 
 async function triggerDownload(): Promise<string> {
@@ -235,7 +292,8 @@ test('launches a frameless keyboard-first shell with one ready content surface',
   await launchApplication();
   const shell = await application!.firstWindow();
 
-  await expect(shell.locator('.drag-region')).toBeVisible();
+  await expect(shell.locator('.drag-region, .settings-drag-strip')).toHaveCount(0);
+  expect(await application!.evaluate(({ Menu }) => Menu.getApplicationMenu() === null)).toBe(true);
   await expect(shell.locator('.titlebar, .menubar, .toolrail, .inspector, .statusbar')).toHaveCount(
     0,
   );
@@ -247,6 +305,49 @@ test('launches a frameless keyboard-first shell with one ready content surface',
   await expect(shell.locator('[role="tablist"]')).toHaveCount(0);
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
   await expect.poll(async () => (await readContentSnapshot()).bounds.width).toBeGreaterThan(0);
+});
+
+test('enters whole-window drag mode and restores workspace input on release', async () => {
+  await launchApplication(`${fixtureOrigin}/window-drag`);
+  const shell = await application!.firstWindow();
+
+  await shell.bringToFront();
+  await sendWorkspaceKey(
+    'keyDown',
+    process.platform === 'darwin' ? ['meta', 'shift'] : ['control', 'shift'],
+  );
+  await expect
+    .poll(async () => shell.evaluate(() => document.documentElement.dataset.windowDragMode))
+    .toBe('active');
+  await expect
+    .poll(async () => executeContent('document.documentElement.dataset.moyuWindowDragMode'))
+    .toBe('active');
+  await expect
+    .poll(async () => executeContent('getComputedStyle(document.documentElement).webkitAppRegion'))
+    .toBe('drag');
+
+  await sendContentMouse('mouseDown', 400, 300);
+  await sendContentMouse('mouseMove', 520, 380);
+  await sendContentMouse('mouseUp', 520, 380);
+  await sendWorkspaceKey('keyUp', []);
+  await blurWorkspaceWindow();
+
+  await expect
+    .poll(async () => executeContent("document.documentElement.dataset.moyuWindowDragMode ?? ''"))
+    .toBe('');
+  await expect
+    .poll(async () => executeContent('getComputedStyle(document.documentElement).webkitAppRegion'))
+    .not.toBe('drag');
+
+  const buttonPoint = (await executeContent(`(() => {
+    const rectangle = document.querySelector('#drag-test-button').getBoundingClientRect();
+    return { x: rectangle.left + rectangle.width / 2, y: rectangle.top + rectangle.height / 2 };
+  })()`)) as { x: number; y: number };
+  await sendContentMouse('mouseDown', buttonPoint.x, buttonPoint.y);
+  await sendContentMouse('mouseUp', buttonPoint.x, buttonPoint.y);
+  await expect
+    .poll(async () => executeContent("document.querySelector('#result').textContent"))
+    .toBe('clicked');
 });
 
 for (const fixture of localHtmlFixtures) {
@@ -291,6 +392,8 @@ test('opens and closes the command palette through the application shortcut', as
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
   ).toBeVisible();
+  await shell.getByRole('textbox', { name: 'Command' }).fill('Hold to Drag Window');
+  await expect(shell.locator('.command-palette__command')).toHaveCount(0);
   await shell.keyboard.press('Escape');
   await expect(
     shell.locator('[role="dialog"][aria-labelledby="command-palette-title"]'),
@@ -315,6 +418,7 @@ test('opens one modeless settings window and applies a URL without closing it', 
     .find((candidate) => candidate.url().includes('/settings/index.html'));
   expect(settings).toBeDefined();
   await settings!.waitForSelector('.settings-window');
+  await expect(settings!.locator('.settings-drag-strip')).toHaveCount(0);
 
   await shell.keyboard.press(primaryShortcut(','));
   await expect
@@ -417,6 +521,60 @@ test('records a shortcut from the keyboard and persists the edited draft', async
   );
   await settings.keyboard.press(primaryShortcut('S'));
   await expect(settings.locator('.settings-footer__status')).toContainText('Saved');
+});
+
+test('customizes the hold-to-drag shortcut without enabling it in Settings', async () => {
+  await launchApplication();
+  const shell = await application!.firstWindow();
+  await shell.keyboard.press(primaryShortcut(','));
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'))!;
+  await settings.waitForSelector('.settings-window');
+  await settings.locator('#shortcut-search').fill('Hold to Drag Window');
+  const row = settings.locator('.shortcut-row').filter({ hasText: 'Hold to Drag Window' }).first();
+  await row.getByRole('button', { name: 'Record' }).click();
+  await settings.locator('.settings-window').press('Alt+Shift+K');
+  await expect(row.locator('.shortcut-key')).toContainText(
+    process.platform === 'darwin' ? '⌥⇧K' : 'Alt+Shift+K',
+  );
+  await settings.keyboard.press(primaryShortcut('S'));
+  await expect(settings.locator('.settings-footer__status')).toContainText('Saved');
+
+  await settings.keyboard.press(`${primaryModifier}+Shift+Space`);
+  await expect
+    .poll(async () => executeContent("document.documentElement.dataset.moyuWindowDragMode ?? ''"))
+    .toBe('');
+
+  await shell.bringToFront();
+  await sendWorkspaceKey(
+    'keyDown',
+    process.platform === 'darwin' ? ['meta', 'shift'] : ['control', 'shift'],
+  );
+  await expect
+    .poll(async () => executeContent("document.documentElement.dataset.moyuWindowDragMode ?? ''"))
+    .toBe('');
+  await sendWorkspaceKey('keyDown', ['alt', 'shift'], 'K');
+  await expect
+    .poll(async () => executeContent('document.documentElement.dataset.moyuWindowDragMode'))
+    .toBe('active');
+  await settings.locator('#workspace-url').fill(`${fixtureUrl}?drag-cleanup=1`);
+  await settings.keyboard.press(primaryShortcut('S'));
+  await expect(settings.locator('.settings-footer__status')).toContainText('Saved');
+  await expect
+    .poll(async () => (await readContentSnapshot()).url)
+    .toBe(`${fixtureUrl}?drag-cleanup=1`);
+  await expect
+    .poll(async () => executeContent("document.documentElement.dataset.moyuWindowDragMode ?? ''"))
+    .toBe('');
 });
 
 test('rejects conflicting shortcut captures before activation', async () => {

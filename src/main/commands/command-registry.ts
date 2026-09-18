@@ -17,6 +17,7 @@ export type CommandSurface = 'workspace' | 'settings';
 export interface CommandRegistry {
   readonly definitions: readonly CommandDefinition[];
   readonly getBinding: (commandId: CommandId) => ShortcutBinding | undefined;
+  readonly getActivation: (commandId: CommandId) => CommandDefinition['activation'];
   readonly getSummaries: () => readonly CommandSummary[];
   readonly getOverrides: () => Readonly<Partial<Record<CommandId, ShortcutBinding>>>;
   readonly setOverrides: (overrides: Readonly<Partial<Record<CommandId, ShortcutBinding>>>) => void;
@@ -34,6 +35,9 @@ export interface CommandBindingValidation {
 }
 
 function isScopeAllowed(scope: CommandScope, surface: CommandSurface): boolean {
+  if (scope === 'workspace') {
+    return surface === 'workspace';
+  }
   return scope === 'application' || surface === 'settings';
 }
 
@@ -113,6 +117,7 @@ export function createCommandRegistry(
       label: definition.label,
       description: definition.description,
       scope: definition.scope,
+      activation: definition.activation,
       customizable: definition.customizable,
       devOnly: definition.devOnly,
       defaultBinding: definition.defaultBinding,
@@ -123,6 +128,8 @@ export function createCommandRegistry(
   return {
     definitions,
     getBinding,
+    getActivation: (commandId) =>
+      definitions.find((definition) => definition.id === commandId)?.activation ?? 'press',
     getSummaries,
     getOverrides: () => overrides,
     setOverrides: (nextOverrides) => {

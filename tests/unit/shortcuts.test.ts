@@ -9,6 +9,7 @@ interface TriggeredInput {
   readonly control: boolean;
   readonly meta: boolean;
   readonly shift: boolean;
+  readonly isAutoRepeat?: boolean;
 }
 
 class FakeContents {
@@ -119,5 +120,90 @@ describe('application shortcuts', () => {
       shell.trigger({ type: 'keyDown', key: 'I', control: true, meta: false, shift: true }),
     ).toBe(true);
     expect(calls).toEqual([]);
+  });
+
+  it('activates and deactivates the workspace hold shortcut on key release', () => {
+    const shell = new FakeContents();
+    const content = new FakeContents();
+    const holdModes: boolean[] = [];
+    const remove = installApplicationShortcuts(
+      shell as never,
+      content as never,
+      config,
+      createCommandRegistry('win32'),
+      {
+        executeCommand: () => undefined,
+        dismissOverlays: () => undefined,
+        setHoldMode: (active) => holdModes.push(active),
+      },
+    );
+
+    expect(
+      content.trigger({
+        type: 'keyDown',
+        key: 'Space',
+        control: true,
+        meta: false,
+        shift: true,
+      }),
+    ).toBe(true);
+    expect(holdModes).toEqual([true]);
+    expect(
+      content.trigger({
+        type: 'keyDown',
+        key: 'Space',
+        control: true,
+        meta: false,
+        shift: true,
+        isAutoRepeat: true,
+      }),
+    ).toBe(true);
+    expect(
+      shell.trigger({
+        type: 'keyUp',
+        key: 'Space',
+        control: true,
+        meta: false,
+        shift: true,
+      }),
+    ).toBe(true);
+    expect(holdModes).toEqual([true, false]);
+
+    remove();
+  });
+
+  it('deactivates a hold shortcut when a required modifier is released', () => {
+    const shell = new FakeContents();
+    const content = new FakeContents();
+    const holdModes: boolean[] = [];
+    installApplicationShortcuts(
+      shell as never,
+      content as never,
+      config,
+      createCommandRegistry('win32'),
+      {
+        executeCommand: () => undefined,
+        dismissOverlays: () => undefined,
+        setHoldMode: (active) => holdModes.push(active),
+      },
+    );
+
+    content.trigger({
+      type: 'keyDown',
+      key: 'Space',
+      control: true,
+      meta: false,
+      shift: true,
+    });
+    expect(
+      content.trigger({
+        type: 'keyUp',
+        key: 'Shift',
+        control: true,
+        meta: false,
+        shift: false,
+      }),
+    ).toBe(true);
+    expect(holdModes).toEqual([true, false]);
   });
 });

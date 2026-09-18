@@ -19,6 +19,8 @@ The application MUST:
 - show one configured web workspace in a frameless desktop shell;
 - provide a separate local Settings window for the workspace URL and shortcut
   bindings;
+- start both local windows at the top of their client areas without a
+  persistent drag strip or titlebar-like decoration;
 - keep the shell keyboard-first and free of a persistent browser address bar,
   tabs, history, bookmarks, or extension UI;
 - support loading, error, reload, crash recovery, zoom, fullscreen, and
@@ -111,6 +113,29 @@ After a successful Settings save:
 
 Resizing, reload, and changing the URL a second time MUST preserve that
 alignment behavior.
+
+The command registry MUST define a customizable `window.drag` command with a
+`hold` activation and `workspace` scope. Its default binding MUST be
+`Cmd+Shift+Space` on macOS and `Ctrl+Shift+Space` on Windows/Linux. The
+command MUST be excluded from the command palette because it is a held mode,
+not a one-shot command.
+
+While the configured `window.drag` binding is held in the main workspace, a
+left-button press and drag anywhere in the window MUST move the frameless
+window. The temporary drag mode MUST apply to the local shell and every loaded
+frame of the remote workspace, including after reload, navigation, or content
+view replacement. Releasing the binding MUST immediately remove the temporary
+drag mode so page clicking, text selection, and scrolling work normally again.
+The mode MUST also clear when the window loses focus, the content view is
+replaced, or the window is destroyed.
+
+The same binding MUST have no effect in Settings. The implementation MUST NOT
+use `setIgnoreMouseEvents` for this behavior, because that would break normal
+page input and scrolling outside the temporary drag mode.
+
+The application MUST remove its registered application menu. The macOS system
+menu bar and Apple menu remain operating-system behavior and are outside this
+window-level contract.
 
 ## 6. Local shell and IPC
 

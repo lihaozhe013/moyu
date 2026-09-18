@@ -4,6 +4,7 @@ import { nextZoomFactor, normalizeZoomFactor } from '../../shared/zoom';
 import { createLogger } from '../app/logger';
 import { configureContentSession } from '../security/session';
 import { applyContentBounds } from './content-layout';
+import { syncWebContentsWindowDragMode } from './window-drag';
 
 const logger = createLogger('content');
 
@@ -30,6 +31,7 @@ export interface ContentViewController {
   readonly resetZoom: () => void;
   readonly getState: () => ContentStatus;
   readonly setOverlayVisible: (visible: boolean) => void;
+  readonly setWindowDragMode: (active: boolean) => void;
   readonly dispose: () => void;
 }
 
@@ -70,6 +72,30 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
   let overlayVisible = false;
   let generation = 0;
   let disposed = false;
+  let windowDragMode = false;
+  let dragSyncSerial = 0;
+  let dragSyncQueue: Promise<void> = Promise.resolve();
+
+  const scheduleWindowDragModeSync = (target: ViewResources | null = resources): void => {
+    if (target === null || disposed) {
+      return;
+    }
+    const serial = ++dragSyncSerial;
+    const active = windowDragMode;
+    dragSyncQueue = dragSyncQueue
+      .catch(() => undefined)
+      .then(async () => {
+        if (
+          serial !== dragSyncSerial ||
+          disposed ||
+          resources !== target ||
+          target.webContents.isDestroyed()
+        ) {
+          return;
+        }
+        await syncWebContentsWindowDragMode(target.webContents, active);
+      });
+  };
 
   const publishStatus = (nextStatus: ContentStatus, resourceGeneration: number): void => {
     if (disposed || resourceGeneration !== generation) {
@@ -186,6 +212,11 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     };
     const handleUnresponsive = (): void => logger.warn('Content became unresponsive');
     const handleResponsive = (): void => logger.info('Content became responsive');
+    const handleFrameFinishLoad = (): void => {
+      if (resourceGeneration === generation && windowDragMode) {
+        scheduleWindowDragModeSync();
+      }
+    };
 
     webContents.on('will-navigate', handleWillNavigate);
     webContents.on('will-redirect', handleWillRedirect);
@@ -197,6 +228,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     webContents.on('render-process-gone', handleRenderProcessGone);
     webContents.on('unresponsive', handleUnresponsive);
     webContents.on('responsive', handleResponsive);
+    webContents.on('did-frame-finish-load', handleFrameFinishLoad);
 
     const removeSessionPolicies = configureContentSession(contentSession);
     mainWindow.contentView.addChildView(view);
@@ -218,6 +250,7 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
       webContents.removeListener('render-process-gone', handleRenderProcessGone);
       webContents.removeListener('unresponsive', handleUnresponsive);
       webContents.removeListener('responsive', handleResponsive);
+      webContents.removeListener('did-frame-finish-load', handleFrameFinishLoad);
     };
 
     return {
@@ -260,6 +293,8 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
     },
     replaceWorkspaceUrl: async (url) => {
       const previous = currentResources();
+      windowDragMode = false;
+      scheduleWindowDragModeSync(previous);
       activeWorkspaceUrl = url;
       disposeResources(previous);
       resources = createResources(url);
@@ -302,11 +337,16 @@ export function createContentView(options: CreateContentViewOptions): ContentVie
         resources.view.setVisible(status.type === 'ready' && !overlayVisible);
       }
     },
+    setWindowDragMode: (active) => {
+      windowDragMode = active;
+      scheduleWindowDragModeSync();
+    },
     dispose: () => {
       if (disposed) {
         return;
       }
       disposed = true;
+      windowDragMode = false;
       generation += 1;
       if (resources !== null) {
         disposeResources(resources);

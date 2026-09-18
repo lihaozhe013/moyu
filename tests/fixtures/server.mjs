@@ -90,6 +90,18 @@ const server = http.createServer((request, response) => {
     case '/popup-target':
       sendHtml(response, page('Popup Target', '<h1>Popup target</h1>'));
       return;
+    case '/window-drag':
+      sendHtml(
+        response,
+        page(
+          'Window Drag Fixture',
+          '<button id="drag-test-button" type="button">Click target</button><p id="result"></p>',
+          `document.querySelector('#drag-test-button').addEventListener('click', () => {
+            document.querySelector('#result').textContent = 'clicked';
+          });`,
+        ),
+      );
+      return;
     case '/webgl':
       sendHtml(
         response,

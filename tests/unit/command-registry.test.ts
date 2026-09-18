@@ -15,6 +15,17 @@ describe('command registry contracts', () => {
 
     expect(macMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['meta'] });
     expect(windowsMinimize?.defaultBinding).toEqual({ code: 'KeyM', modifiers: ['alt'] });
+
+    expect(mac.find((definition) => definition.id === 'window.drag')).toMatchObject({
+      scope: 'workspace',
+      activation: 'hold',
+      defaultBinding: { code: 'Space', modifiers: ['meta', 'shift'] },
+    });
+    expect(windows.find((definition) => definition.id === 'window.drag')).toMatchObject({
+      scope: 'workspace',
+      activation: 'hold',
+      defaultBinding: { code: 'Space', modifiers: ['control', 'shift'] },
+    });
   });
 
   it('rejects unsafe shortcut shapes', () => {
@@ -71,6 +82,21 @@ describe('command registry contracts', () => {
         false,
       ),
     ).toBe('settings.save');
+    expect(
+      registry.match(
+        { code: 'Space', alt: false, control: true, meta: false, shift: true },
+        'workspace',
+        false,
+      ),
+    ).toBe('window.drag');
+    expect(
+      registry.match(
+        { code: 'Space', alt: false, control: true, meta: false, shift: true },
+        'settings',
+        false,
+      ),
+    ).toBeUndefined();
+    expect(registry.getActivation('window.drag')).toBe('hold');
   });
 
   it('normalizes modifier order for stable persistence keys', () => {

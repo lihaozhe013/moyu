@@ -38,9 +38,12 @@ boundary. The application does not attempt to defend against hostile content.
 
 The repository includes:
 
-- a frameless, keyboard-first shell with one full-window workspace surface;
+- a frameless, keyboard-first shell with one edge-to-edge workspace surface and
+  no persistent drag strip or titlebar decoration;
 - a separate Settings window for the workspace URL and shortcut preferences;
 - a main-process command registry and keyboard shortcuts;
+- a customizable hold-to-drag shortcut, defaulting to `Cmd+Shift+Space` on
+  macOS and `Ctrl+Shift+Space` on Windows/Linux;
 - persisted workspace preferences and first-run configuration;
 - a content session shared by the workspace and allowed popups;
 - URL loading, reload, error, crash, zoom, fullscreen, and bounds handling; and
@@ -51,6 +54,13 @@ The first-run path caches the latest `.content-host` bounds before the remote
 view exists, then applies them as soon as the first `WebContentsView` is
 created. Saving a URL therefore creates a visible view instead of a `0x0`
 surface.
+
+Hold the window-drag shortcut and press the left mouse button anywhere in the
+main workspace to move the frameless window. While the shortcut is held, the
+pointer gesture is consumed by window dragging; releasing it restores normal
+page clicking, text selection, and scrolling. The Settings window remains a
+normal form surface. The application does not register a project-specific
+global menu; macOS still owns its system menu bar and Apple menu.
 
 ## Documentation
 

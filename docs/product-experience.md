@@ -15,13 +15,30 @@ malicious page.
 
 ## Primary workspace
 
-The main window is frameless and canvas-first. It has a quiet drag region, a
-single `.content-host`, and transient loading/error/empty overlays. It does not
-show a persistent address bar, tabs, browser history, bookmarks, or custom
-window buttons.
+The main window is frameless and canvas-first. Its client area starts at the
+top edge and contains a single `.content-host` with transient
+loading/error/empty overlays. It does not show a persistent drag strip,
+titlebar-like decoration, address bar, tabs, browser history, bookmarks, or
+custom window buttons.
 
 The remote page fills the content host. Its native `WebContentsView` bounds
 match the host rectangle, including on high-DPI displays and after resizing.
+
+## Whole-window dragging
+
+The main workspace has a customizable hold-to-drag shortcut. Its default is
+`⌘⇧Space` on macOS and `Ctrl+Shift+Space` on Windows/Linux. The command is
+workspace-scoped and is not shown in the command palette.
+
+While the shortcut is held, pressing and dragging the left mouse button
+anywhere in the workspace moves the frameless window. The gesture is consumed
+by the native window drag while the shortcut is held. Releasing the complete
+shortcut restores normal page clicking, text selection, and scrolling. Settings
+does not enter this mode and remains a normal form window.
+
+The drag styling is temporary. It is removed on shortcut release or window
+focus loss and is reapplied to the remote document and its child frames after a
+reload, navigation, or content-view replacement.
 
 ## Startup and workspace URL
 
@@ -43,14 +60,16 @@ ready.
 The existing command registry provides reload, hard reload, zoom, fullscreen,
 Settings, command palette, diagnostics, and window presentation actions. These
 commands remain application features and are independent of the remote page's
-Node/Electron capabilities.
+Node/Electron capabilities. The window-drag command is the one held-mode
+exception and is handled only by the main process.
 
 ## Settings window
 
 Settings is a separate local, modeless, frameless window. It is single-instance,
 keyboard-operable, and remains visible after saving a workspace URL. Shortcut
 editing and conflict feedback continue to use the existing typed Settings IPC
-contract.
+contract. Settings has no persistent top drag strip and never responds to the
+workspace window-drag shortcut.
 
 ## Loading and recovery
 

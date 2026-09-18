@@ -12,6 +12,7 @@ export const IPC_CHANNELS = {
   windowClose: 'window:close',
   windowToggleFullscreen: 'window:toggle-fullscreen',
   windowGetState: 'window:get-state',
+  windowDragModeChanged: 'window:drag-mode-changed',
   contentReload: 'content:reload',
   contentHardReload: 'content:hard-reload',
   contentSetZoomFactor: 'content:set-zoom-factor',

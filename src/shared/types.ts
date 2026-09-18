@@ -15,6 +15,7 @@ export type CommandId =
   | 'settings.open'
   | 'settings.save'
   | 'palette.open'
+  | 'window.drag'
   | 'window.minimize'
   | 'window.toggleMaximize'
   | 'window.close'

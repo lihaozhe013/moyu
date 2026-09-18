@@ -222,7 +222,6 @@ function SettingsApp(): React.JSX.Element {
 
   return (
     <main className="settings-window" onKeyDown={handleKeyDown} tabIndex={-1}>
-      <div className="settings-drag-strip" aria-hidden="true" />
       <header className="settings-header">
         <div>
           <p className="settings-eyebrow">PROFESSIONAL CANVAS</p>

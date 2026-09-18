@@ -28,6 +28,7 @@ export default function App(): React.JSX.Element {
       label: definition.label,
       description: definition.description,
       scope: definition.scope,
+      activation: definition.activation,
       customizable: definition.customizable,
       devOnly: definition.devOnly,
       defaultBinding: definition.defaultBinding,
@@ -200,6 +201,7 @@ export default function App(): React.JSX.Element {
       );
       if (command === undefined) return;
       event.preventDefault();
+      if (command.activation === 'hold') return;
       if (command.id === 'palette.open') {
         setPaletteOpen(true);
       } else {
@@ -215,7 +217,6 @@ export default function App(): React.JSX.Element {
 
   return (
     <div className="app-shell">
-      <div className="drag-region" aria-hidden="true" />
       <main
         className="content-host"
         aria-label="Workspace content"

@@ -16,7 +16,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-The current suite has 17 Vitest files / 47 unit tests and 22 Electron E2E
+The current suite has 18 Vitest files / 51 unit tests and 24 Electron E2E
 scenarios. Network-dependent public-site checks may fail when a site or the
 local network is unavailable; they are compatibility smoke tests rather than a
 security requirement.
@@ -29,8 +29,9 @@ Unit tests cover:
 - optional first-run configuration and ignored legacy policy variables;
 - explicit boolean environment parsing;
 - versioned preference persistence and Settings validation;
-- shortcuts, command dispatch, geometry, zoom, content status, logging, IPC,
-  and window state; and
+- platform-default and customizable shortcut bindings, held window-drag
+  activation, cross-surface release, geometry, zoom, content status, logging,
+  IPC, and window state; and
 - local shell CSP and context-menu behavior.
 
 The removed navigation-policy tests that asserted strict origins, HTTPS-only
@@ -53,20 +54,24 @@ denial are intentionally gone.
 | `/webgl`                 | WebGL/WebGPU capability smoke test            |
 | `/error`                 | deterministic first-load failure and recovery |
 | `/local/*.html`          | local edge-to-edge HTML fixtures              |
+| `/window-drag`           | temporary drag mode and restored page input   |
 
 ## Electron E2E coverage
 
 The suite verifies:
 
-1. the frameless shell and native content bounds;
+1. the frameless shell, edge-to-edge content bounds, and absence of persistent
+   shell or Settings drag strips;
 2. first-run Settings opening, URL save, visible nonzero view bounds, remote
    script execution, empty-state removal, and Settings remaining open;
 3. resize, reload, zoom, fullscreen, crash recovery, and error recovery;
 4. cross-origin redirects and the same unrestricted content behavior in test and
    production modes;
 5. popup creation and permission request initiation;
-6. local HTTP fixtures and optional public HTTPS compatibility smoke pages; and
-7. the absence of the local `desktopAPI` bridge in remote content while the
+6. local HTTP fixtures and optional public HTTPS compatibility smoke pages;
+7. default and customized whole-window drag shortcuts, workspace-only scope,
+   temporary frame styles, release/blur cleanup, and restored page clicking;
+8. the absence of the local `desktopAPI` bridge in remote content while the
    configured Node/Electron runtime remains available.
 
 The E2E suite uses the same built Electron entry point for test and production
@@ -77,7 +82,16 @@ must use the same content policy.
 
 On supported Windows and macOS systems, manually check frameless resize,
 fullscreen, hidden native buttons, Settings focus, high-DPI placement, media,
-geolocation, popup windows, and downloads with a trusted fixture page.
+geolocation, popup windows, and downloads with a trusted fixture page. Hold the
+default and a customized drag shortcut and confirm that a real left-button drag
+moves the native window, while ordinary page clicking, text selection, and
+scrolling return after release. Also check reload, navigation, content-view
+replacement, maximize, restore, and full-screen transitions.
+
+Electron's synthetic `WebContents.sendInputEvent` coverage verifies mode
+transitions and restored page input but does not prove native OS window
+movement. Native movement and macOS traffic-light/titlebar/menu presentation
+remain platform manual checks.
 
 ## Release report
 

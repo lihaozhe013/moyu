@@ -1,6 +1,7 @@
 import type { CommandId, ShortcutBinding, ShortcutModifier } from './types';
 
-export type CommandScope = 'application' | 'settings';
+export type CommandScope = 'application' | 'settings' | 'workspace';
+export type CommandActivation = 'press' | 'hold';
 export type SupportedPlatform = 'darwin' | 'win32';
 
 export interface CommandDefinition {
@@ -8,6 +9,7 @@ export interface CommandDefinition {
   readonly label: string;
   readonly description: string;
   readonly scope: CommandScope;
+  readonly activation: CommandActivation;
   readonly customizable: boolean;
   readonly devOnly: boolean;
   readonly defaultBinding: ShortcutBinding | undefined;
@@ -18,6 +20,7 @@ export interface CommandSummary {
   readonly label: string;
   readonly description: string;
   readonly scope: CommandScope;
+  readonly activation: CommandActivation;
   readonly customizable: boolean;
   readonly devOnly: boolean;
   readonly defaultBinding: ShortcutBinding | undefined;
@@ -36,6 +39,7 @@ export const COMMAND_IDS: readonly CommandId[] = [
   'settings.open',
   'settings.save',
   'palette.open',
+  'window.drag',
   'window.minimize',
   'window.toggleMaximize',
   'window.close',
@@ -75,6 +79,10 @@ function platformWindowBinding(
   return binding(code, shift ? ['alt', 'shift'] : ['alt']);
 }
 
+function windowDragBinding(platform: SupportedPlatform): ShortcutBinding {
+  return binding('Space', platform === 'darwin' ? ['meta', 'shift'] : ['control', 'shift']);
+}
+
 export function createCommandDefinitions(
   platform: SupportedPlatform,
 ): readonly CommandDefinition[] {
@@ -84,6 +92,7 @@ export function createCommandDefinitions(
       label: 'Open Settings',
       description: 'Open or focus the application settings window.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'Comma'),
@@ -93,6 +102,7 @@ export function createCommandDefinitions(
       label: 'Save Settings',
       description: 'Save pending settings changes.',
       scope: 'settings',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'KeyS'),
@@ -102,6 +112,7 @@ export function createCommandDefinitions(
       label: 'Open Command Palette',
       description: 'Show the keyboard command palette.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'KeyL', true),
@@ -111,6 +122,7 @@ export function createCommandDefinitions(
       label: 'Minimize Window',
       description: 'Minimize the primary workspace window.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: platformWindowBinding(platform, 'KeyM'),
@@ -120,6 +132,7 @@ export function createCommandDefinitions(
       label: 'Maximize or Restore Window',
       description: 'Toggle the primary workspace between maximized and windowed.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: platformWindowBinding(platform, 'KeyM', true),
@@ -129,6 +142,7 @@ export function createCommandDefinitions(
       label: 'Close Window',
       description: 'Close the focused application window.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'KeyW'),
@@ -138,6 +152,7 @@ export function createCommandDefinitions(
       label: 'Quit Application',
       description: 'Quit the desktop application.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'KeyQ'),
@@ -147,6 +162,7 @@ export function createCommandDefinitions(
       label: 'Toggle Fullscreen',
       description: 'Enter or leave native fullscreen presentation.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding:
@@ -157,6 +173,7 @@ export function createCommandDefinitions(
       label: 'Reload Workspace',
       description: 'Reload the remote workspace content.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'KeyR'),
@@ -166,6 +183,7 @@ export function createCommandDefinitions(
       label: 'Hard Reload Workspace',
       description: 'Reload the remote workspace while ignoring cache.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'KeyR', true),
@@ -175,6 +193,7 @@ export function createCommandDefinitions(
       label: 'Reset Content Zoom',
       description: 'Reset the workspace content zoom to 100 percent.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'Digit0'),
@@ -184,6 +203,7 @@ export function createCommandDefinitions(
       label: 'Increase Content Zoom',
       description: 'Increase the workspace content zoom.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'Equal', true),
@@ -193,6 +213,7 @@ export function createCommandDefinitions(
       label: 'Decrease Content Zoom',
       description: 'Decrease the workspace content zoom.',
       scope: 'application',
+      activation: 'press',
       customizable: true,
       devOnly: false,
       defaultBinding: primary(platform, 'Minus'),
@@ -202,6 +223,7 @@ export function createCommandDefinitions(
       label: 'About Professional Canvas',
       description: 'Show application information.',
       scope: 'application',
+      activation: 'press',
       customizable: false,
       devOnly: false,
       defaultBinding: undefined,
@@ -211,6 +233,7 @@ export function createCommandDefinitions(
       label: 'GPU Diagnostics',
       description: 'Show non-sensitive GPU capability diagnostics.',
       scope: 'application',
+      activation: 'press',
       customizable: false,
       devOnly: true,
       defaultBinding: undefined,
@@ -220,9 +243,20 @@ export function createCommandDefinitions(
       label: 'Open Content DevTools',
       description: 'Open developer tools for the workspace content.',
       scope: 'application',
+      activation: 'press',
       customizable: false,
       devOnly: true,
       defaultBinding: primary(platform, 'KeyI', true),
+    },
+    {
+      id: 'window.drag',
+      label: 'Hold to Drag Window',
+      description: 'Hold the shortcut and drag anywhere in the workspace.',
+      scope: 'workspace',
+      activation: 'hold',
+      customizable: true,
+      devOnly: false,
+      defaultBinding: windowDragBinding(platform),
     },
   ];
 }

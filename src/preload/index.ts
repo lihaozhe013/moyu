@@ -8,6 +8,7 @@ const IPC_CHANNELS = {
   windowClose: 'window:close',
   windowToggleFullscreen: 'window:toggle-fullscreen',
   windowGetState: 'window:get-state',
+  windowDragModeChanged: 'window:drag-mode-changed',
   contentReload: 'content:reload',
   contentHardReload: 'content:hard-reload',
   contentSetZoomFactor: 'content:set-zoom-factor',
@@ -68,6 +69,29 @@ function isGpuDiagnostics(value: unknown): value is GpuDiagnostics {
     Object.values(candidate.featureStatus).every((status) => typeof status === 'string')
   );
 }
+
+function setWindowDragMode(active: boolean): void {
+  const apply = (): void => {
+    const root = document.documentElement;
+    if (active) {
+      root.dataset.windowDragMode = 'active';
+    } else {
+      delete root.dataset.windowDragMode;
+    }
+  };
+
+  if (document.documentElement !== null) {
+    apply();
+    return;
+  }
+  window.addEventListener('DOMContentLoaded', apply, { once: true });
+}
+
+ipcRenderer.on(IPC_CHANNELS.windowDragModeChanged, (_event, active: unknown) => {
+  if (typeof active === 'boolean') {
+    setWindowDragMode(active);
+  }
+});
 
 const desktopApi: DesktopAPI = {
   window: {

@@ -29,8 +29,9 @@ export function CommandPalette({
 
   const visibleCommands = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (normalized.length === 0) return commands;
-    return commands.filter((command) =>
+    const pressCommands = commands.filter((command) => command.activation === 'press');
+    if (normalized.length === 0) return pressCommands;
+    return pressCommands.filter((command) =>
       `${command.label} ${command.description} ${command.id}`.toLowerCase().includes(normalized),
     );
   }, [commands, query]);

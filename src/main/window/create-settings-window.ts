@@ -36,6 +36,7 @@ export function createSettingsWindow(
     title: 'Settings',
     backgroundColor: '#181818',
     frame: false,
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' as const } : {}),
     autoHideMenuBar: process.platform !== 'darwin',
     webPreferences: {
       preload: getPreloadPath(),

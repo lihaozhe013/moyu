@@ -1,13 +1,23 @@
 import type { WebContents } from 'electron';
 import { IPC_CHANNELS } from '../ipc/channels';
-import type { AppConfig, CommandId } from '../../shared/types';
-import type { ShortcutInput } from '../../shared/commands';
+import type { AppConfig, CommandId, ShortcutBinding, ShortcutModifier } from '../../shared/types';
+import {
+  shortcutBindingEquals,
+  shortcutBindingFromInput,
+  type ShortcutInput,
+} from '../../shared/commands';
 import type { CommandRegistry, CommandSurface } from '../commands/command-registry';
 
 export interface ShortcutActions {
   readonly executeCommand: (commandId: CommandId) => void;
   readonly dismissOverlays: () => void;
+  readonly setHoldMode?: (active: boolean) => void;
+  readonly isHoldModeActive?: () => boolean;
   readonly isCapturing?: () => boolean;
+}
+
+interface ShortcutHoldState {
+  activeBinding: ShortcutBinding | undefined;
 }
 
 interface BeforeInputEvent {
@@ -23,6 +33,12 @@ interface BeforeInputEvent {
 
 function normalizeCode(input: BeforeInputEvent): string {
   if (input.code !== undefined && input.code.length > 0) {
+    if (/^[a-z]$/i.test(input.code)) {
+      return `Key${input.code.toUpperCase()}`;
+    }
+    if (/^[0-9]$/.test(input.code)) {
+      return `Digit${input.code}`;
+    }
     return input.code;
   }
   if (input.key === '+' || input.key === '=') {
@@ -34,6 +50,9 @@ function normalizeCode(input: BeforeInputEvent): string {
   if (input.key === ',') {
     return 'Comma';
   }
+  if (input.key === ' ' || input.key === 'Spacebar') {
+    return 'Space';
+  }
   if (/^F(?:[1-9]|1[0-2])$/.test(input.key)) {
     return input.key;
   }
@@ -44,6 +63,37 @@ function normalizeCode(input: BeforeInputEvent): string {
     return `Digit${input.key}`;
   }
   return input.key;
+}
+
+function modifierForInput(input: BeforeInputEvent): ShortcutModifier | undefined {
+  const code = input.code ?? input.key;
+  if (code === 'AltLeft' || code === 'AltRight' || input.key === 'Alt') {
+    return 'alt';
+  }
+  if (code === 'ControlLeft' || code === 'ControlRight' || input.key === 'Control') {
+    return 'control';
+  }
+  if (
+    code === 'MetaLeft' ||
+    code === 'MetaRight' ||
+    code === 'OSLeft' ||
+    code === 'OSRight' ||
+    input.key === 'Meta'
+  ) {
+    return 'meta';
+  }
+  if (code === 'ShiftLeft' || code === 'ShiftRight' || input.key === 'Shift') {
+    return 'shift';
+  }
+  return undefined;
+}
+
+function endsHeldShortcut(binding: ShortcutBinding, input: BeforeInputEvent): boolean {
+  if (normalizeCode(input) === binding.code) {
+    return true;
+  }
+  const releasedModifier = modifierForInput(input);
+  return releasedModifier !== undefined && binding.modifiers.includes(releasedModifier);
 }
 
 function toShortcutInput(input: BeforeInputEvent): ShortcutInput {
@@ -63,9 +113,35 @@ export function installShortcutHandler(
   config: AppConfig,
   surface: CommandSurface,
   actions: ShortcutActions,
+  holdState: ShortcutHoldState = { activeBinding: undefined },
 ): () => void {
   const handler = (event: Electron.Event, input: BeforeInputEvent): void => {
-    if (input.type !== 'keyDown' || input.isAutoRepeat === true) {
+    if (input.type === 'keyUp') {
+      if (
+        holdState.activeBinding !== undefined &&
+        endsHeldShortcut(holdState.activeBinding, input)
+      ) {
+        event.preventDefault();
+        holdState.activeBinding = undefined;
+        actions.setHoldMode?.(false);
+      }
+      return;
+    }
+
+    if (input.type !== 'keyDown') {
+      return;
+    }
+
+    if (input.isAutoRepeat === true) {
+      if (
+        holdState.activeBinding !== undefined &&
+        shortcutBindingEquals(
+          holdState.activeBinding,
+          shortcutBindingFromInput(toShortcutInput(input)),
+        )
+      ) {
+        event.preventDefault();
+      }
       return;
     }
 
@@ -92,6 +168,19 @@ export function installShortcutHandler(
     }
 
     event.preventDefault();
+    if (registry.getActivation(commandId) === 'hold') {
+      const binding = registry.getBinding(commandId);
+      const shouldActivate =
+        binding !== undefined &&
+        (holdState.activeBinding === undefined || actions.isHoldModeActive?.() === false);
+      if (binding !== undefined) {
+        holdState.activeBinding = binding;
+        if (shouldActivate) {
+          actions.setHoldMode?.(true);
+        }
+      }
+      return;
+    }
     if (commandId === 'palette.open') {
       paletteContents.send(IPC_CHANNELS.commandPaletteOpen);
       return;
@@ -100,7 +189,13 @@ export function installShortcutHandler(
   };
 
   contents.on('before-input-event', handler);
-  return () => contents.removeListener('before-input-event', handler);
+  return () => {
+    contents.removeListener('before-input-event', handler);
+    if (holdState.activeBinding !== undefined) {
+      holdState.activeBinding = undefined;
+      actions.setHoldMode?.(false);
+    }
+  };
 }
 
 export function installApplicationShortcuts(
@@ -110,6 +205,7 @@ export function installApplicationShortcuts(
   registry: CommandRegistry,
   actions: ShortcutActions,
 ): () => void {
+  const holdState: ShortcutHoldState = { activeBinding: undefined };
   const removeShellHandler = installShortcutHandler(
     shellContents,
     shellContents,
@@ -117,6 +213,7 @@ export function installApplicationShortcuts(
     config,
     'workspace',
     actions,
+    holdState,
   );
   const removeContentHandler =
     contentContents === null
@@ -128,6 +225,7 @@ export function installApplicationShortcuts(
           config,
           'workspace',
           actions,
+          holdState,
         );
   return () => {
     removeShellHandler();

@@ -17,11 +17,7 @@ import { resolveAppConfigFromEnvironment, withWorkspaceUrl } from './security/co
 import { validateSettingsDraft } from './security/preferences-validation';
 import { createContentSession } from './security/session';
 import { createContentView, type ContentViewController } from './window/content-view';
-import {
-  createMainWindow,
-  installApplicationMenu,
-  loadLocalShell,
-} from './window/create-main-window';
+import { createMainWindow, loadLocalShell } from './window/create-main-window';
 import {
   createSettingsWindow,
   type SettingsWindowController,
@@ -40,6 +36,7 @@ import {
 import { collectGpuDiagnostics } from './gpu/diagnostics';
 import { installShellContentSecurityPolicy } from './security/csp';
 import { buildApplicationContextMenuTemplate } from './window/context-menu';
+import { createWindowDragController, type WindowDragController } from './window/window-drag';
 
 let mainWindow: BrowserWindow | null = null;
 let contentView: ContentViewController | null = null;
@@ -51,6 +48,7 @@ let removeSettingsShortcuts: (() => void) | undefined;
 let presentationController: ReturnType<typeof createWindowPresentationController> | undefined;
 let preferencesStore: PreferencesStore | undefined;
 let commandRegistry: CommandRegistry | undefined;
+let windowDragController: WindowDragController | undefined;
 const logger = createLogger('app');
 
 function getMainWindow(): BrowserWindow | null {
@@ -160,6 +158,8 @@ async function createApplicationWindow(): Promise<void> {
           contentView?.webContents.openDevTools({ mode: 'detach' });
         }
         return;
+      case 'window.drag':
+        return;
       case 'palette.open':
       case 'shell.about':
       case 'shell.gpuDiagnostics':
@@ -203,6 +203,8 @@ async function createApplicationWindow(): Promise<void> {
       commandRegistry,
       {
         executeCommand,
+        setHoldMode: (active) => windowDragController?.setActive(active),
+        isHoldModeActive: () => windowDragController?.isActive() ?? false,
         dismissOverlays: () => {
           contentView?.setOverlayVisible(false);
           currentWindow.webContents.send(IPC_CHANNELS.commandPaletteClose);
@@ -220,6 +222,7 @@ async function createApplicationWindow(): Promise<void> {
       onContextMenu: showApplicationContextMenu,
     });
     contentView = created;
+    windowDragController?.refresh();
     if (latestContentBounds !== undefined) {
       created.setBounds(latestContentBounds);
     }
@@ -304,13 +307,13 @@ async function createApplicationWindow(): Promise<void> {
 
     registry.setOverrides(commandValidation.overrides);
     activeConfig = nextConfig;
-    installApplicationMenu(registry, executeCommand);
     let workspaceReloadStarted = false;
     if (contentView === null) {
       const created = createWorkspaceContent(nextConfig);
       await created.load();
       workspaceReloadStarted = true;
     } else if (previousUrl !== draft.workspaceUrl) {
+      windowDragController?.setActive(false);
       removeShortcuts?.();
       await contentView.replaceWorkspaceUrl(draft.workspaceUrl);
       installContentShortcuts();
@@ -341,11 +344,12 @@ async function createApplicationWindow(): Promise<void> {
     };
   }
 
-  const restoredWindow = createMainWindow(restoredState, {
-    commandRegistry: registry,
-    executeCommand,
-  });
+  const restoredWindow = createMainWindow(restoredState);
   mainWindow = restoredWindow;
+  windowDragController = createWindowDragController({
+    window: restoredWindow,
+    getContentSurface: () => contentView,
+  });
   let lastBounds = restoredWindow.getBounds();
   lastWindowedBounds = lastBounds;
   presentationController = createWindowPresentationController(restoredWindow);
@@ -463,6 +467,8 @@ async function createApplicationWindow(): Promise<void> {
     removeSettingsShortcuts = undefined;
     presentationController?.dispose();
     presentationController = undefined;
+    windowDragController?.dispose();
+    windowDragController = undefined;
     contentView?.dispose();
     contentView = null;
     removeIpcHandlers?.();
@@ -499,6 +505,7 @@ async function startApplication(): Promise<void> {
   }
 
   await app.whenReady();
+  Menu.setApplicationMenu(null);
   await createApplicationWindow();
 
   app.on('activate', () => {

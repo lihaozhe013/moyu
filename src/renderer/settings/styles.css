@@ -39,18 +39,11 @@ input:focus-visible {
 
 .settings-window {
   display: grid;
-  grid-template-rows: 12px auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: 100%;
   height: 100vh;
   min-height: 520px;
   background: #181818;
-}
-
-.settings-drag-strip {
-  -webkit-app-region: drag;
-  app-region: drag;
-  background: #202020;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .settings-header {

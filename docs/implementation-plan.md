@@ -50,9 +50,23 @@ over security isolation.
 - Repository documentation now describes the runtime as experimental and not a
   security browser.
 
+### 5. Whole-window drag and chrome removal
+
+- The default hold shortcut is `Cmd+Shift+Space` on macOS and
+  `Ctrl+Shift+Space` on Windows/Linux, with Settings customization and
+  conflict validation.
+- The `window.drag` command is hold-activated and workspace-scoped, so Settings
+  and the command palette do not treat it as a normal command.
+- The main process synchronizes temporary native drag styling across the shell,
+  the remote document, and its child frames, and clears it on release, focus
+  loss, content replacement, reload lifecycle changes, and teardown.
+- The main and Settings layouts no longer contain a persistent top drag strip;
+  the registered Electron application menu is removed while context menus and
+  command shortcuts remain available.
+
 ## Current verification shape
 
-The repository currently contains 17 Vitest files with 47 unit tests and 22
+The repository currently contains 18 Vitest files with 51 unit tests and 24
 Electron E2E scenarios. The exact count can change as fixtures and shell
 features evolve; the commands in `README.md` remain authoritative.
 
