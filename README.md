@@ -25,7 +25,7 @@ The repository includes:
 - exact-origin navigation, popup/permission/download denial, secure preload
   boundaries, generation-safe URL replacement, zoom, fullscreen, and crash
   recovery; and
-- deterministic loopback fixtures, 49 unit tests, and 13 Electron E2E tests.
+- deterministic loopback fixtures, 51 unit tests, and 20 Electron E2E tests.
 
 Product branding, signed artifacts, notarization, and clean Windows/macOS
 release evidence remain deployment inputs.

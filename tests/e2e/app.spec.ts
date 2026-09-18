@@ -1,12 +1,24 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
 const fixtureOrigin = 'http://127.0.0.1:4311';
 const fixtureUrl = `${fixtureOrigin}/`;
 const mainEntry = resolve('out/main/index.js');
+
+const knownWebsites = [
+  { label: 'Example Domain', url: 'https://example.com/', origin: 'https://example.com' },
+  { label: 'IANA', url: 'https://www.iana.org/', origin: 'https://www.iana.org' },
+  { label: 'W3C', url: 'https://www.w3.org/', origin: 'https://www.w3.org' },
+] as const;
+
+const localHtmlFixtures = [
+  { label: 'minimal', path: '/local/minimal.html' },
+  { label: 'edge-to-edge', path: '/local/edge-to-edge.html' },
+  { label: 'long document', path: '/local/long-document.html' },
+] as const;
 
 const primaryModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
 
@@ -34,6 +46,83 @@ async function readContentSnapshot(): Promise<{ url: string; bounds: Record<stri
       bounds: child?.getBounds?.() ?? {},
     };
   });
+}
+
+async function readMainWindowFrameSnapshot(): Promise<{
+  bounds: Record<string, number>;
+  contentBounds: Record<string, number>;
+}> {
+  if (application === undefined) {
+    throw new Error('Electron application is not running.');
+  }
+
+  return application.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows().find((candidate) =>
+      candidate.webContents.getURL().includes('/renderer/index.html'),
+    );
+    if (window === undefined) {
+      throw new Error('Main workspace window is not available.');
+    }
+    const bounds = window.getBounds();
+    const contentBounds = window.getContentBounds();
+    return {
+      bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+      contentBounds: {
+        x: contentBounds.x,
+        y: contentBounds.y,
+        width: contentBounds.width,
+        height: contentBounds.height,
+      },
+    };
+  });
+}
+
+async function assertBorderlessWorkspace(shell: Page): Promise<void> {
+  const shellChrome = await shell.evaluate(() => {
+    const readBorderWidths = (selector: string): Record<string, string> => {
+      const element = document.querySelector(selector);
+      if (!(element instanceof HTMLElement)) {
+        throw new Error(`Missing shell element: ${selector}`);
+      }
+      const styles = window.getComputedStyle(element);
+      return {
+        borderTopWidth: styles.borderTopWidth,
+        borderRightWidth: styles.borderRightWidth,
+        borderBottomWidth: styles.borderBottomWidth,
+        borderLeftWidth: styles.borderLeftWidth,
+      };
+    };
+    return {
+      appShell: readBorderWidths('.app-shell'),
+      contentHost: readBorderWidths('.content-host'),
+    };
+  });
+  expect(Object.values(shellChrome.appShell)).toEqual(['0px', '0px', '0px', '0px']);
+  expect(Object.values(shellChrome.contentHost)).toEqual(['0px', '0px', '0px', '0px']);
+
+  const windowFrame = await readMainWindowFrameSnapshot();
+  expect(windowFrame.bounds).toEqual(windowFrame.contentBounds);
+
+  const contentHostBounds = await shell.locator('.content-host').boundingBox();
+  const content = await readContentSnapshot();
+  expect(contentHostBounds).not.toBeNull();
+  expect(content.bounds.x).toBe(Math.round(contentHostBounds!.x));
+  expect(content.bounds.y).toBe(Math.round(contentHostBounds!.y));
+  expect(content.bounds.width).toBe(Math.round(contentHostBounds!.width));
+  expect(content.bounds.height).toBe(Math.round(contentHostBounds!.height));
+}
+
+async function isPublicWebsiteReachable(url: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    return response.status >= 200 && response.status < 500;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function navigateContent(url: string): Promise<void> {
@@ -120,6 +209,43 @@ test('launches a frameless keyboard-first shell with one ready content surface',
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
   await expect.poll(async () => (await readContentSnapshot()).bounds.width).toBeGreaterThan(0);
 });
+
+for (const fixture of localHtmlFixtures) {
+  test(`loads local ${fixture.label} HTML edge-to-edge without a shell border`, async () => {
+    const fixtureUrl = `${fixtureOrigin}${fixture.path}`;
+    await launchApplication(fixtureUrl);
+    const shell = await application!.firstWindow();
+
+    await expect(shell.locator('.loading-overlay')).toBeHidden({ timeout: 15_000 });
+    await expect(shell.locator('.error-overlay')).toHaveCount(0);
+    await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
+    await expect
+      .poll(async () => executeContent('document.documentElement.dataset.localFixture'))
+      .toBe(fixture.label);
+    await assertBorderlessWorkspace(shell);
+  });
+}
+
+for (const site of knownWebsites) {
+  test(`loads ${site.label} without adding application chrome or a border`, async () => {
+    test.setTimeout(75_000);
+    test.skip(
+      !(await isPublicWebsiteReachable(site.url)),
+      `Skipping ${site.label}: the public website is unavailable in this environment.`,
+    );
+
+    await launchApplication(site.url);
+    const shell = await application!.firstWindow();
+    await expect(shell.locator('.loading-overlay')).toBeHidden({ timeout: 30_000 });
+    await expect(shell.locator('.error-overlay')).toHaveCount(0);
+    await expect
+      .poll(async () => (await readContentSnapshot()).url)
+      .toMatch(new RegExp(`^${site.origin.replaceAll('.', '\\.')}`));
+    await expect.poll(async () => executeContent('document.title')).not.toBe('');
+    expect(await executeContent('typeof window.desktopAPI')).toBe('undefined');
+    await assertBorderlessWorkspace(shell);
+  });
+}
 
 test('opens and closes the command palette through the application shortcut', async () => {
   await launchApplication();

@@ -1,7 +1,9 @@
 # Testing Strategy
 
 Tests prove both visible behavior and containment. The deterministic fixture
-never depends on the production website or public network.
+never depends on the production website or public network. Supplemental public
+website smoke tests are reachability-gated so offline environments retain a
+deterministic acceptance path.
 
 ## Quality gates
 
@@ -15,7 +17,7 @@ pnpm build
 ```
 
 The full acceptance gate additionally runs `pnpm test:e2e`. The current local
-baseline is 18 unit-test files / 49 tests and 13 Electron E2E scenarios.
+baseline is 18 unit-test files / 51 tests and 20 Electron E2E scenarios.
 
 ## Unit and boundary coverage
 
@@ -53,6 +55,7 @@ rejected or safely ignored.
 | `/download`         | download cancellation                         |
 | `/webgl`            | WebGL/WebGPU capability smoke test            |
 | `/error`            | deterministic first-load failure and recovery |
+| `/local/*.html`     | local edge-to-edge HTML fixture pages         |
 
 The fixture also supports a renderer-crash trigger from the E2E harness. Lack
 of WebGPU is an accepted capability result.
@@ -73,6 +76,9 @@ The E2E suite verifies:
    generation; an empty first run opens Settings and focuses the URL input;
 6. shortcut capture, reset behavior, dirty/save state, and conflict feedback;
 7. no remote page receives `window.desktopAPI` or local privileges.
+8. local HTML fixtures and reachable public websites load without application
+   chrome, shell/content borders, or a mismatch between native and DOM bounds;
+   public-site checks are skipped when the environment has no network access.
 
 Native context-menu presentation is covered by an injectable template unit
 test. Windows and macOS packaged builds still require manual right-click,

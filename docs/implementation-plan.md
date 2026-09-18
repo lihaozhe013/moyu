@@ -68,8 +68,8 @@ macOS registry-backed application menu, and shell command IPC.
 The current local gate passes:
 
 ```text
-18 unit-test files / 49 tests
-13 Electron E2E scenarios
+18 unit-test files / 51 tests
+20 Electron E2E scenarios
 pnpm typecheck
 pnpm lint
 pnpm build

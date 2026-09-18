@@ -1,8 +1,18 @@
 import http from 'node:http';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const port = Number(process.env.FIXTURE_PORT ?? 4311);
 const origin = `http://127.0.0.1:${port}`;
 let errorAttempts = 0;
+const localFixtureDirectory = join(dirname(fileURLToPath(import.meta.url)), 'local');
+const localFixturePages = new Map(
+  ['minimal', 'edge-to-edge', 'long-document'].map((name) => [
+    `/local/${name}.html`,
+    readFileSync(join(localFixtureDirectory, `${name}.html`), 'utf8'),
+  ]),
+);
 
 function page(title, body, script = '') {
   return `<!doctype html>
@@ -37,6 +47,12 @@ function sendHtml(response, body, status = 200) {
 
 const server = http.createServer((request, response) => {
   const requestUrl = new URL(request.url ?? '/', origin);
+  const localFixture = localFixturePages.get(requestUrl.pathname);
+  if (localFixture !== undefined) {
+    sendHtml(response, localFixture);
+    return;
+  }
+
   switch (requestUrl.pathname) {
     case '/':
       sendHtml(
