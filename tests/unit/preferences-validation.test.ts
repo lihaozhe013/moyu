@@ -3,6 +3,7 @@ import type { PersistedWindowState } from '../../src/shared/types';
 import {
   normalizeWorkspaceUrl,
   sanitizeAppPreferences,
+  validateSettingsDraft,
   validateShortcutBinding,
 } from '../../src/main/security/preferences-validation';
 
@@ -53,5 +54,27 @@ describe('preference validation', () => {
       value: { code: 'KeyA', modifiers: ['alt', 'meta'] },
     });
     expect(validateShortcutBinding({ code: 'KeyA', modifiers: ['hyper'] }).success).toBe(false);
+  });
+
+  it('validates complete settings drafts before they reach persistence', () => {
+    expect(
+      validateSettingsDraft({
+        workspaceUrl: 'https://workspace.example.test/new',
+        shortcuts: {
+          'content.reload': { code: 'KeyK', modifiers: ['control'] },
+        },
+      }),
+    ).toEqual({
+      success: true,
+      value: {
+        workspaceUrl: 'https://workspace.example.test/new',
+        shortcuts: {
+          'content.reload': { code: 'KeyK', modifiers: ['control'] },
+        },
+      },
+    });
+    expect(
+      validateSettingsDraft({ workspaceUrl: 'https://user:pass@example.test/', shortcuts: {} }),
+    ).toMatchObject({ success: false });
   });
 });

@@ -221,6 +221,36 @@ test('records a shortcut from the keyboard and persists the edited draft', async
   await expect(settings.locator('.settings-footer__status')).toContainText('Saved');
 });
 
+test('rejects conflicting shortcut captures before activation', async () => {
+  await launchApplication();
+  const shell = await application!.firstWindow();
+  await shell.keyboard.press(primaryShortcut(','));
+  await expect
+    .poll(
+      async () =>
+        application!
+          .windows()
+          .filter((candidate) => candidate.url().includes('/settings/index.html')).length,
+    )
+    .toBe(1);
+  const settings = application!
+    .windows()
+    .find((candidate) => candidate.url().includes('/settings/index.html'))!;
+  await settings.waitForSelector('.settings-window');
+  await settings.locator('#shortcut-search').fill('reload workspace');
+  const rows = settings.locator('.shortcut-row');
+  const firstRecord = rows.nth(0).getByRole('button', { name: 'Record' });
+  await firstRecord.focus();
+  await firstRecord.press('Enter');
+  await settings.locator('.settings-window').press('Alt+Shift+K');
+  const secondRecord = rows.nth(1).getByRole('button', { name: 'Record' });
+  await secondRecord.focus();
+  await secondRecord.press('Enter');
+  await settings.locator('.settings-window').press('Alt+Shift+K');
+  await settings.keyboard.press(primaryShortcut('S'));
+  await expect(settings.locator('.settings-footer__status')).toContainText('conflicts');
+});
+
 test('blocks a denied redirect and keeps the current trusted workspace', async () => {
   await launchApplication();
   await expect.poll(async () => (await readContentSnapshot()).url).toBe(fixtureUrl);
