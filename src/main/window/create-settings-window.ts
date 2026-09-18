@@ -49,12 +49,15 @@ export function createSettingsWindow(
     settingsWindow.setWindowButtonVisibility(false);
   }
 
+  let ready = false;
   settingsWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
     logger.error('Settings preload failed', { preloadPath, error: error.message });
   });
   settingsWindow.once('ready-to-show', () => {
+    ready = true;
     if (!settingsWindow.isDestroyed()) {
       settingsWindow.show();
+      settingsWindow.focus();
     }
   });
   settingsWindow.once('closed', onClosed);
@@ -78,10 +81,12 @@ export function createSettingsWindow(
       if (settingsWindow.isDestroyed()) {
         return;
       }
-      if (!settingsWindow.isVisible()) {
+      if (ready && !settingsWindow.isVisible()) {
         settingsWindow.show();
       }
-      settingsWindow.focus();
+      if (ready) {
+        settingsWindow.focus();
+      }
     },
     close: () => {
       if (!settingsWindow.isDestroyed()) {
