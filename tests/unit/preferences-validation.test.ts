@@ -48,6 +48,25 @@ describe('preference validation', () => {
     expect(result.issues.length).toBe(3);
   });
 
+  it('recovers valid window fields independently', () => {
+    const result = sanitizeAppPreferences(
+      {
+        version: 1,
+        window: { width: -1, height: 720, x: 44, maximized: false },
+        shortcuts: {},
+      },
+      fallbackWindow,
+    );
+
+    expect(result.preferences.window).toEqual({
+      width: fallbackWindow.width,
+      height: 720,
+      x: 44,
+      y: fallbackWindow.y,
+      maximized: false,
+    });
+  });
+
   it('keeps malformed shortcut input out of persisted state', () => {
     expect(validateShortcutBinding({ code: 'KeyA', modifiers: ['meta', 'alt'] })).toEqual({
       success: true,

@@ -8,7 +8,6 @@ import type {
   ValidationResult,
 } from '../../shared/types';
 import { isCommandId, shortcutBindingKey } from '../../shared/commands';
-import { validatePersistedWindowState } from './ipc-validation';
 
 const shortcutModifiers = new Set<ShortcutModifier>(['alt', 'control', 'meta', 'shift']);
 const shortcutCodes =
@@ -121,6 +120,57 @@ function fallbackPreferences(window: PersistedWindowState): AppPreferencesV1 {
   };
 }
 
+function isValidWindowNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 100_000;
+}
+
+function sanitizeWindowState(
+  input: unknown,
+  fallback: PersistedWindowState,
+): { readonly value: PersistedWindowState; readonly issues: readonly string[] } {
+  if (!isRecord(input)) {
+    return { value: fallback, issues: ['Preferences window state is invalid.'] };
+  }
+  const issues: string[] = [];
+  const allowedKeys = new Set(['width', 'height', 'x', 'y', 'maximized']);
+  if (Object.keys(input).some((key) => !allowedKeys.has(key))) {
+    issues.push('Preferences window state contains an unknown field.');
+  }
+
+  const width = isValidWindowNumber(input.width)
+    ? input.width
+    : (issues.push('Preferences window width is invalid.'), fallback.width);
+  const height = isValidWindowNumber(input.height)
+    ? input.height
+    : (issues.push('Preferences window height is invalid.'), fallback.height);
+  const maximized =
+    typeof input.maximized === 'boolean'
+      ? input.maximized
+      : (issues.push('Preferences window maximized state is invalid.'), fallback.maximized);
+
+  let x = fallback.x;
+  if (input.x !== undefined) {
+    if (typeof input.x === 'number' && Number.isFinite(input.x)) x = input.x;
+    else issues.push('Preferences window x coordinate is invalid.');
+  }
+  let y = fallback.y;
+  if (input.y !== undefined) {
+    if (typeof input.y === 'number' && Number.isFinite(input.y)) y = input.y;
+    else issues.push('Preferences window y coordinate is invalid.');
+  }
+
+  return {
+    value: {
+      width,
+      height,
+      ...(x === undefined ? {} : { x }),
+      ...(y === undefined ? {} : { y }),
+      maximized,
+    },
+    issues,
+  };
+}
+
 export function sanitizeAppPreferences(
   input: unknown,
   fallbackWindow: PersistedWindowState,
@@ -146,12 +196,9 @@ export function sanitizeAppPreferences(
 
   let window = fallbackWindow;
   if (input.window !== undefined) {
-    const validation = validatePersistedWindowState(input.window);
-    if (validation.success) {
-      window = validation.value;
-    } else {
-      issues.push(validation.error);
-    }
+    const sanitizedWindow = sanitizeWindowState(input.window, fallbackWindow);
+    window = sanitizedWindow.value;
+    issues.push(...sanitizedWindow.issues);
   } else {
     issues.push('Preferences window state is missing.');
   }
